@@ -3,7 +3,9 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const aws = require('aws-sdk');
 
-require('dotenv').config();
+const path = require('path');
+
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const awsConfig = new aws.Config({
   region: 'us-west-1',
