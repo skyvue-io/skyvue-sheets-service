@@ -13,8 +13,6 @@ const awsConfig = new aws.Config({
 
 const s3 = new aws.S3(awsConfig);
 
-require('dotenv').config();
-
 app.get('/', (req, res) => {
   res.send('Datasets service is alive!');
 });
