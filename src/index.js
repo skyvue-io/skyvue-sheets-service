@@ -33,7 +33,6 @@ io.on('connection', async socket => {
   socket.on('diff', async data => {
     await cnxn.addChange(data);
     await cnxn.save();
-    console.log('saving');
     socket.emit('returnDiff', { data: cnxn.baseState });
   });
 
