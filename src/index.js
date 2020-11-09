@@ -1,19 +1,10 @@
 const app = require('express')();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
-const aws = require('aws-sdk');
-
 const path = require('path');
+const Session = require('./Session');
 
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
-
-const awsConfig = new aws.Config({
-  region: 'us-west-1',
-  accessKeyId: process.env.AWS_ACCESS_KEY,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-});
-
-const s3 = new aws.S3(awsConfig);
+const connections = {};
 
 app.get('/', (req, res) => {
   res.send('Datasets service is alive!');
@@ -24,19 +15,30 @@ io.on('connection', async socket => {
 
   if (datasetId && userId) {
     socket.join(datasetId);
+    if (!connections[datasetId]) {
+      connections[datasetId] = Session({
+        datasetId,
+        userId,
+      });
+    }
   }
 
+  const cnxn = connections[datasetId];
+
   socket.on('loadDataset', async () => {
-    const s3Params = {
-      Bucket: 'skyvue-datasets',
-      Key: `${userId}-${datasetId}`,
-    };
-
-    await s3.headObject(s3Params).promise();
-    const res = await s3.getObject(s3Params).promise();
-    const data = JSON.parse(res.Body.toString('utf-8'));
-
+    const data = await cnxn.load();
     socket.emit('initialDatasetReceived', data);
+  });
+
+  socket.on('diff', async data => {
+    await cnxn.addChange(data);
+    await cnxn.save();
+    console.log('saving');
+    socket.emit('returnDiff', { data: cnxn.baseState });
+  });
+
+  socket.on('saveDataset', async () => {
+    await cnxn.save();
   });
 });
 
