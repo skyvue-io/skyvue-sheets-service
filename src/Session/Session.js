@@ -1,5 +1,4 @@
 const aws = require('aws-sdk');
-const R = require('ramda');
 const env = require('../env');
 
 const awsConfig = new aws.Config({
@@ -19,16 +18,6 @@ const Session = ({ datasetId, userId }) => {
   let head;
   let baseState;
   let fnQueue;
-
-  const save = async () => {
-    await s3
-      .putObject({
-        ...s3Params,
-        ContentType: 'application/json',
-        Body: JSON.stringify(baseState),
-      })
-      .promise();
-  };
 
   return {
     get baseState() {
@@ -72,7 +61,15 @@ const Session = ({ datasetId, userId }) => {
     inViewState: () => undefined,
     csvFileSize: () => undefined,
     setBaseState: () => undefined,
-    save,
+    save: async () => {
+      await s3
+        .putObject({
+          ...s3Params,
+          ContentType: 'application/json',
+          Body: JSON.stringify(baseState),
+        })
+        .promise();
+    },
     saveAsNew: () => undefined,
     get layers() {
       return 'hi';
