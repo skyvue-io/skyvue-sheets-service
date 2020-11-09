@@ -16,9 +16,9 @@ const Session = ({ datasetId, userId }) => {
     Key: `${userId}-${datasetId}`,
   };
 
-  const idleSaveTimer = null;
   let head;
   let baseState;
+  let fnQueue;
 
   const save = async () => {
     await s3
@@ -37,6 +37,15 @@ const Session = ({ datasetId, userId }) => {
     get head() {
       return head;
     },
+    runQueuedFunc: () => {
+      fnQueue?.();
+    },
+    queueFunc: fn => {
+      fnQueue = fn;
+    },
+    clearFuncQueue: () => {
+      fnQueue = undefined;
+    },
     load: async () => {
       head = await s3.headObject(s3Params).promise();
       const res = await s3.getObject(s3Params).promise();
@@ -44,7 +53,12 @@ const Session = ({ datasetId, userId }) => {
       baseState = data;
       return baseState;
     },
-    addChange: async diff => {
+    getSlice: (start, end) => ({
+      ...baseState,
+      rows:
+        baseState?.rows?.filter(row => row.index >= start && row.index <= end) ?? [],
+    }),
+    addDiff: async diff => {
       const { colDiff, rowDiff } = diff;
 
       baseState = {
