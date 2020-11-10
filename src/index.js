@@ -28,7 +28,7 @@ io.on('connection', async socket => {
 
   socket.on('loadDataset', async () => {
     await cnxn.load();
-    const slice = cnxn.getSlice(0, 30);
+    const slice = cnxn.getSlice(0, 100);
     socket.emit('initialDatasetReceived', slice);
   });
 
