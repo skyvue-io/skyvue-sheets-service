@@ -36,6 +36,10 @@ io.on('connection', async socket => {
     socket.emit('head', cnxn.head);
   });
 
+  socket.on('meta', async () => {
+    socket.emit('meta', cnxn.meta);
+  });
+
   socket.on('csvEstimate', async () => {
     socket.emit('csvEstimate', cnxn.estCSVSize);
   });

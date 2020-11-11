@@ -29,6 +29,11 @@ const Session = ({ datasetId, userId }) => {
     get head() {
       return head;
     },
+    get meta() {
+      return {
+        rows: baseState?.rows.length,
+      };
+    },
     get estCSVSize() {
       if (!baseState) return;
       return R.pipe(boardDataToCSVReadableJSON, jsonToCSV, csv =>
