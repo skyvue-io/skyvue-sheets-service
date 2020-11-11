@@ -32,6 +32,14 @@ io.on('connection', async socket => {
     socket.emit('initialDatasetReceived', slice);
   });
 
+  socket.on('head', async () => {
+    socket.emit('head', cnxn.head);
+  });
+
+  socket.on('csvEstimate', async () => {
+    socket.emit('csvEstimate', cnxn.estCSVSize);
+  });
+
   socket.on('getSlice', async ({ first, last }) => {
     socket.emit('slice', cnxn.getSlice(first, last));
   });

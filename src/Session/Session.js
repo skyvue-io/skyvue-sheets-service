@@ -1,5 +1,8 @@
 const aws = require('aws-sdk');
+const R = require('ramda');
 const env = require('../env');
+const boardDataToCSVReadableJSON = require('../lib/boardDataToCSVReadableJSON');
+const jsonToCSV = require('../lib/jsonToCSV');
 
 const awsConfig = new aws.Config({
   region: 'us-west-1',
@@ -25,6 +28,12 @@ const Session = ({ datasetId, userId }) => {
     },
     get head() {
       return head;
+    },
+    get estCSVSize() {
+      if (!baseState) return;
+      return R.pipe(boardDataToCSVReadableJSON, jsonToCSV, csv =>
+        Buffer.byteLength(csv, 'uft8'),
+      )(baseState);
     },
     runQueuedFunc: () => {
       fnQueue?.();
