@@ -49,13 +49,8 @@ const Session = ({ datasetId, userId }) => {
     formatting: [],
   };
 
-  const getCompiled = () => {
-    applyDatasetLayers(layers, baseState);
-    return {
-      layers,
-      ...baseState,
-    };
-  };
+  const getCompiled = () =>
+    baseState && layers ? applyDatasetLayers(layers, baseState) : baseState;
 
   return {
     get baseState() {
@@ -99,6 +94,7 @@ const Session = ({ datasetId, userId }) => {
       const data = JSON.parse(res.Body.toString('utf-8'));
       baseState = data;
       layers = baseState.layers;
+
       return baseState;
     },
     getSlice: (start, end) => {
@@ -125,6 +121,7 @@ const Session = ({ datasetId, userId }) => {
     csvFileSize: () => undefined,
     setBaseState: () => undefined,
     save: async () => {
+      console.log('saving', layers);
       await s3
         .putObject({
           ...s3Params,

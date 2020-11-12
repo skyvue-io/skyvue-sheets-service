@@ -30,6 +30,7 @@ io.on('connection', async socket => {
 
   const refreshInView = cnxn => {
     const slice = cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
+    console.log(slice);
     socket.emit('refreshInView', slice);
   };
 
@@ -58,6 +59,13 @@ io.on('connection', async socket => {
   socket.on('layer', async layer => {
     cnxn.addLayer(layer.layerKey, R.omit(['layerKey'], layer));
     socket.emit('inview', refreshInView(cnxn));
+
+    clearTimeout(idleSaveTimer[datasetId]);
+    cnxn.queueFunc(cnxn.save);
+    idleSaveTimer[datasetId] = setTimeout(() => {
+      cnxn.save();
+      cnxn.clearFuncQueue();
+    }, 5000);
   });
 
   socket.on('diff', async data => {
