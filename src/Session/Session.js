@@ -121,7 +121,6 @@ const Session = ({ datasetId, userId }) => {
     csvFileSize: () => undefined,
     setBaseState: () => undefined,
     save: async () => {
-      console.log('saving', layers);
       await s3
         .putObject({
           ...s3Params,
