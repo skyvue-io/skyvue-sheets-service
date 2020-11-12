@@ -1,11 +1,13 @@
 const app = require('express')();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
-const { emit } = require('process');
+const R = require('ramda');
 const Session = require('./Session');
 
 const connections = {};
 const idleSaveTimer = {};
+const DEFAULT_SLICE_START = 0;
+const DEFAULT_SLICE_END = 100;
 
 app.get('/', (req, res) => {
   res.send('Datasets service is alive!');
@@ -26,9 +28,14 @@ io.on('connection', async socket => {
 
   const cnxn = connections[datasetId];
 
+  const refreshInView = cnxn => {
+    const slice = cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
+    socket.emit('refreshInView', slice);
+  };
+
   socket.on('loadDataset', async () => {
     await cnxn.load();
-    const slice = cnxn.getSlice(0, 100);
+    const slice = cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
     socket.emit('initialDatasetReceived', slice);
   });
 
@@ -46,6 +53,11 @@ io.on('connection', async socket => {
 
   socket.on('getSlice', async ({ first, last }) => {
     socket.emit('slice', cnxn.getSlice(first, last));
+  });
+
+  socket.on('layer', async layer => {
+    cnxn.addLayer(layer.layerKey, R.omit(['layerKey'], layer));
+    socket.emit('inview', refreshInView(cnxn));
   });
 
   socket.on('diff', async data => {

@@ -1,6 +1,7 @@
 const aws = require('aws-sdk');
 const R = require('ramda');
 const env = require('../env');
+const applyDatasetLayers = require('../lib/applyDatasetLayers');
 const boardDataToCSVReadableJSON = require('../lib/boardDataToCSVReadableJSON');
 const jsonToCSV = require('../lib/jsonToCSV');
 
@@ -12,6 +13,25 @@ const awsConfig = new aws.Config({
 
 const s3 = new aws.S3(awsConfig);
 
+/**
+ * @param {{
+ *   columns: IColumn[];
+ *   rows: IRow[]
+ *   visibilitySettings: {
+ *     owner: UserId;
+ *     editors: UserId[];
+ *     viewers: UserId[];
+ *   }
+ *  layers: {
+ *    joins: [],
+ *    filters: [],
+ *    groupings: [],
+ *    sort: [],
+ *    formatting: [],
+ *  }
+ * }} boardData
+ */
+
 const Session = ({ datasetId, userId }) => {
   const s3Params = {
     Bucket: 'skyvue-datasets',
@@ -21,6 +41,21 @@ const Session = ({ datasetId, userId }) => {
   let head;
   let baseState;
   let fnQueue;
+  let layers = {
+    joins: [],
+    filters: [],
+    groupings: [],
+    sortings: [],
+    formatting: [],
+  };
+
+  const getCompiled = () => {
+    applyDatasetLayers(layers, baseState);
+    return {
+      layers,
+      ...baseState,
+    };
+  };
 
   return {
     get baseState() {
@@ -40,6 +75,15 @@ const Session = ({ datasetId, userId }) => {
         Buffer.byteLength(csv, 'uft8'),
       )(baseState);
     },
+    addLayer: (layerKey, layer) => {
+      layers = {
+        ...layers,
+        [layerKey]: R.uniqWith(
+          R.eqProps,
+          layers ? [...layers[layerKey], layer] : [layer],
+        ),
+      };
+    },
     runQueuedFunc: () => {
       fnQueue?.();
     },
@@ -54,13 +98,18 @@ const Session = ({ datasetId, userId }) => {
       const res = await s3.getObject(s3Params).promise();
       const data = JSON.parse(res.Body.toString('utf-8'));
       baseState = data;
+      layers = baseState.layers;
       return baseState;
     },
-    getSlice: (start, end) => ({
-      ...baseState,
-      rows:
-        baseState?.rows?.filter(row => row.index >= start && row.index <= end) ?? [],
-    }),
+    getSlice: (start, end) => {
+      const compiled = getCompiled();
+      return {
+        ...compiled,
+        rows:
+          compiled?.rows?.filter(row => row.index >= start && row.index <= end) ??
+          [],
+      };
+    },
     addDiff: async diff => {
       const { colDiff, rowDiff } = diff;
 
@@ -80,14 +129,14 @@ const Session = ({ datasetId, userId }) => {
         .putObject({
           ...s3Params,
           ContentType: 'application/json',
-          Body: JSON.stringify(baseState),
+          Body: JSON.stringify({
+            layers,
+            ...baseState,
+          }),
         })
         .promise();
     },
     saveAsNew: () => undefined,
-    get layers() {
-      return 'hi';
-    },
   };
 };
 
