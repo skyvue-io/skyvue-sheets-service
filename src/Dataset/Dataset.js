@@ -4,6 +4,8 @@ const env = require('../env');
 const applyDatasetLayers = require('../lib/applyDatasetLayers');
 const boardDataToCSVReadableJSON = require('../lib/boardDataToCSVReadableJSON');
 const jsonToCSV = require('../lib/jsonToCSV');
+const addDiff = require('../utils/addDiff');
+const addLayer = require('../utils/addLayer');
 
 const awsConfig = new aws.Config({
   region: 'us-west-1',
@@ -32,7 +34,20 @@ const s3 = new aws.S3(awsConfig);
  * }} boardData
  */
 
-const Session = ({ datasetId, userId }) => {
+const initial_layers = {
+  joins: [],
+  filters: [],
+  groupings: [],
+  sortings: [],
+  formatting: [],
+};
+
+const getCompiled = (layers, baseState) =>
+  baseState && baseState.layers && !R.whereEq(layers)(initial_layers)
+    ? applyDatasetLayers(layers, baseState)
+    : baseState;
+
+const Dataset = ({ datasetId, userId }) => {
   const s3Params = {
     Bucket: 'skyvue-datasets',
     Key: `${userId}-${datasetId}`,
@@ -41,16 +56,7 @@ const Session = ({ datasetId, userId }) => {
   let head;
   let baseState;
   let fnQueue;
-  let layers = {
-    joins: [],
-    filters: [],
-    groupings: [],
-    sortings: [],
-    formatting: [],
-  };
-
-  const getCompiled = () =>
-    baseState && layers ? applyDatasetLayers(layers, baseState) : baseState;
+  let layers = initial_layers;
 
   return {
     get baseState() {
@@ -64,6 +70,9 @@ const Session = ({ datasetId, userId }) => {
         rows: baseState?.rows.length,
       };
     },
+    get layers() {
+      return layers;
+    },
     get estCSVSize() {
       if (!baseState) return;
       return R.pipe(boardDataToCSVReadableJSON, jsonToCSV, csv =>
@@ -71,13 +80,10 @@ const Session = ({ datasetId, userId }) => {
       )(baseState);
     },
     addLayer: (layerKey, layer) => {
-      layers = {
-        ...layers,
-        [layerKey]: R.uniqWith(
-          R.eqProps,
-          layers ? [...layers[layerKey], layer] : [layer],
-        ),
-      };
+      layers = addLayer(layerKey, layer, layers);
+    },
+    clearLayers: () => {
+      layers = initial_layers;
     },
     runQueuedFunc: () => {
       fnQueue?.();
@@ -93,47 +99,42 @@ const Session = ({ datasetId, userId }) => {
       const res = await s3.getObject(s3Params).promise();
       const data = JSON.parse(res.Body.toString('utf-8'));
       baseState = data;
-      layers = baseState.layers;
+      layers = baseState.layers ?? initial_layers;
 
       return baseState;
     },
     getSlice: (start, end) => {
-      const compiled = getCompiled();
+      const compiled = getCompiled(layers, baseState);
+
       return {
         ...compiled,
+        layers,
         rows:
           compiled?.rows?.filter(row => row.index >= start && row.index <= end) ??
           [],
       };
     },
     addDiff: async diff => {
-      const { colDiff, rowDiff } = diff;
-
-      baseState = {
-        ...baseState,
-        columns: baseState.columns.map(
-          col => colDiff.find(d => d._id === col._id) ?? col,
-        ),
-        rows: baseState.rows.map(row => rowDiff.find(d => d._id === row._id) ?? row),
-      };
+      baseState = addDiff(diff, baseState);
     },
-    inViewState: () => undefined,
-    csvFileSize: () => undefined,
-    setBaseState: () => undefined,
     save: async () => {
+      if (!baseState) return;
       await s3
         .putObject({
           ...s3Params,
           ContentType: 'application/json',
           Body: JSON.stringify({
-            layers,
             ...baseState,
+            layers,
           }),
         })
         .promise();
     },
     saveAsNew: () => undefined,
+    inViewState: () => undefined,
+    csvFileSize: () => undefined,
+    setBaseState: () => undefined,
   };
 };
 
-module.exports = Session;
+module.exports = Dataset;

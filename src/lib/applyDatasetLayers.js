@@ -2,8 +2,10 @@ const R = require('ramda');
 
 const applyDatasetLayers = (layers, boardData) => {
   const predicateMap = {
-    equals: (a, b) => a === b,
-    notEquals: (a, b) => a !== b,
+    // eslint-disable-next-line eqeqeq
+    equals: (a, b) => a == b,
+    // eslint-disable-next-line eqeqeq
+    notEquals: (a, b) => a != b,
     contains: (a, b) => b.includes(a),
     lessThan: (a, b) => a < b,
     lessThanEqualTo: (a, b) => a <= b,

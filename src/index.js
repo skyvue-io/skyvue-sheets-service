@@ -2,7 +2,7 @@ const app = require('express')();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const R = require('ramda');
-const Session = require('./Session');
+const Dataset = require('./Dataset');
 
 const connections = {};
 const idleSaveTimer = {};
@@ -19,7 +19,7 @@ io.on('connection', async socket => {
   if (datasetId && userId) {
     socket.join(datasetId);
     if (!connections[datasetId]) {
-      connections[datasetId] = Session({
+      connections[datasetId] = Dataset({
         datasetId,
         userId,
       });
@@ -28,10 +28,18 @@ io.on('connection', async socket => {
 
   const cnxn = connections[datasetId];
 
+  const saveAfterDelay = () => {
+    clearTimeout(idleSaveTimer[datasetId]);
+    cnxn.queueFunc(cnxn.save);
+    idleSaveTimer[datasetId] = setTimeout(() => {
+      cnxn.save();
+      cnxn.clearFuncQueue();
+    }, 5000);
+  };
+
   const refreshInView = cnxn => {
     const slice = cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
-    console.log(slice);
-    socket.emit('refreshInView', slice);
+    socket.emit('slice', slice);
   };
 
   socket.on('loadDataset', async () => {
@@ -57,27 +65,21 @@ io.on('connection', async socket => {
   });
 
   socket.on('layer', async layer => {
-    cnxn.addLayer(layer.layerKey, R.omit(['layerKey'], layer));
-    socket.emit('inview', refreshInView(cnxn));
+    await cnxn.addLayer(layer.layerKey, R.omit(['layerKey'], layer));
+    refreshInView(cnxn);
 
-    clearTimeout(idleSaveTimer[datasetId]);
-    cnxn.queueFunc(cnxn.save);
-    idleSaveTimer[datasetId] = setTimeout(() => {
-      cnxn.save();
-      cnxn.clearFuncQueue();
-    }, 5000);
+    saveAfterDelay();
+  });
+
+  socket.on('clearLayers', async () => {
+    cnxn.clearLayers();
+    saveAfterDelay();
+    refreshInView(cnxn);
   });
 
   socket.on('diff', async data => {
     await cnxn.addDiff(data);
-
-    clearTimeout(idleSaveTimer[datasetId]);
-    cnxn.queueFunc(cnxn.save);
-    idleSaveTimer[datasetId] = setTimeout(() => {
-      cnxn.save();
-      cnxn.clearFuncQueue();
-    }, 5000);
-
+    saveAfterDelay();
     socket.emit('returnDiff', { data: cnxn.baseState });
   });
 
