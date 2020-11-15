@@ -33,8 +33,12 @@ const processRow = R.curry((logicalRules, boardData, row) => {
   }
 });
 
-const applyFilters = R.curry((logicalRules, boardData, rows) =>
-  R.filter(processRow(logicalRules, boardData))(rows),
-);
+const applyFilters = R.curry((logicalRules, boardData) => ({
+  ...boardData,
+  rows:
+    logicalRules.length > 0
+      ? R.filter(processRow(logicalRules, boardData))(boardData.rows)
+      : boardData.rows,
+}));
 
 module.exports = applyFilters;
