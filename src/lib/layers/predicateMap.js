@@ -9,7 +9,7 @@ const predicateMap = {
   lessThan: (a, b) => a < b,
   lessThanEqualTo: (a, b) => a <= b,
   greaterThan: (a, b) => a > b,
-  greaterThanEqualTo: (a, b) => a <= b,
+  greaterThanEqualTo: (a, b) => a >= b,
   dateBetween: R.__,
 };
 
