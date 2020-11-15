@@ -1,45 +1,41 @@
 const R = require('ramda');
+const predicateMap = require('./layers/predicateMap');
+const applyFilters = require('./layers/applyFilters');
 
 const applyDatasetLayers = (layers, boardData) => {
-  const predicateMap = {
-    // eslint-disable-next-line eqeqeq
-    equals: (a, b) => a == b,
-    // eslint-disable-next-line eqeqeq
-    notEquals: (a, b) => a != b,
-    contains: (a, b) => b.includes(a),
-    lessThan: (a, b) => a < b,
-    lessThanEqualTo: (a, b) => a <= b,
-    greaterThan: (a, b) => a > b,
-    greaterThanEqualTo: (a, b) => a <= b,
-    dateBetween: R.__,
-  };
-
   const layerFunctions = {
     joins: R.identity,
-    filters: R.curry((layers, rows) => {
-      const applyToLayer = layer => {
-        const colAppliedTo = boardData.columns.findIndex(
-          col => col._id === layer.colId,
-        );
-
-        return R.filter(row =>
-          predicateMap[layer.predicateType](
-            layer.value,
-            row.cells[colAppliedTo].value,
-          ),
-        )(rows);
-      };
-
-      return R.pipe(R.map(applyToLayer), R.flatten)(layers);
-    }),
+    filters: applyFilters,
     groupings: R.identity,
     sortings: R.identity,
     formatting: R.identity,
   };
 
+  const conditions = [
+    'AND',
+    {
+      key: 'fc8d530e-41d2-43f0-87ce-9e30ab6f8c06',
+      value: 'marvel/0001/001.jpg',
+      predicateType: 'equals',
+    },
+    [
+      'OR',
+      {
+        key: '2d9dc775-d7f2-4acc-ba07-6f20493abac8',
+        value: '1',
+        predicateType: 'equals',
+      },
+      {
+        key: 'fc8d530e-41d2-43f0-87ce-9e30ab6f8c06',
+        value: 'marvel/0001/000.jpg',
+        predicateType: 'equals',
+      },
+    ],
+  ];
+
   const applyLayers = R.pipe(
     layerFunctions.joins,
-    layerFunctions.filters(layers.filters),
+    layerFunctions.filters(conditions, boardData),
     layerFunctions.groupings,
     layerFunctions.sortings,
     layerFunctions.formatting,

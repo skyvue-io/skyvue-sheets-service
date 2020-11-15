@@ -42,10 +42,10 @@ const initial_layers = {
   formatting: [],
 };
 
-const getCompiled = (layers, baseState) =>
-  baseState && baseState.layers && !R.whereEq(layers)(initial_layers)
-    ? applyDatasetLayers(layers, baseState)
-    : baseState;
+const getCompiled = (layers, baseState) => applyDatasetLayers(layers, baseState);
+// baseState && baseState.layers && !R.whereEq(layers)(initial_layers)
+//   ? applyDatasetLayers(layers, baseState)
+//   : baseState;
 
 const Dataset = ({ datasetId, userId }) => {
   const s3Params = {
