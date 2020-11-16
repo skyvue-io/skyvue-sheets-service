@@ -2,6 +2,7 @@ const R = require('ramda');
 const { v4: uuidv4 } = require('uuid');
 const findMax = require('../../utils/findMax');
 const findMin = require('../../utils/findMin');
+const findRowsWithValues = require('../queries/findRowsWithValues');
 
 const aggFuncMap = {
   sum: R.reduce((a, b) => parseInt(a, 10) + parseInt(b, 10), 0),
@@ -26,34 +27,13 @@ const getColumnValues = (colId, boardData) => {
   )(boardData.rows);
 };
 
-const getValuesOfGrouped = (values, index, boardData) => {
-  console.log(values);
-  return R.pipe(
-    R.filter(
-      row =>
-        R.intersection(values, R.map(R.prop('value'), row.cells)).length ===
-        values.length,
-    ),
-    R.map(R.prop('cells')),
-    R.map(cells => cells[index].value),
-  )(boardData.rows);
-};
-
 const groupDataset = R.curry((layer, boardData) => {
-  const { columns } = boardData;
-  const aggregateKeys = Object.keys(layer.columnAggregates);
-  const colIdsRepresented = [...layer.groupedBy, ...aggregateKeys];
+  if (R.length(R.keys(layer)) === 0) return boardData;
 
-  const lookupColumn = colId => columns.find(col => col._id === colId);
-  const mapColumns = colId => {
-    const col = lookupColumn(colId);
-    return aggregateKeys.includes(colId)
-      ? {
-          ...col,
-          value: `${layer.columnAggregates[colId]} of ${col.value}`,
-        }
-      : { ...col };
-  };
+  const { columns } = boardData;
+  const { groupedBy, columnAggregates } = layer;
+  const aggregateKeys = Object.keys(columnAggregates);
+  const colIdsRepresented = [...groupedBy, ...aggregateKeys];
 
   const uniqGroupedValues = R.pipe(
     R.map(col => ({
@@ -62,7 +42,29 @@ const groupDataset = R.curry((layer, boardData) => {
     })),
     R.indexBy(R.prop('key')),
     R.pluck('values'),
-  )(layer.groupedBy);
+  )(groupedBy);
+
+  const mapColumns = colId => {
+    const col = columns.find(col => col._id === colId);
+    return aggregateKeys.includes(colId)
+      ? {
+          ...col,
+          value: `${columnAggregates[colId]} of ${col.value}`,
+        }
+      : { ...col };
+  };
+
+  const mapGroupedCells = R.curry((rowIndex, colId) => ({
+    _id: uuidv4(),
+    value: uniqGroupedValues[colId]
+      ? uniqGroupedValues[colId][rowIndex]
+      : aggFuncMap[columnAggregates[colId]](
+          findRowsWithValues(
+            R.values(R.map(groupedCol => groupedCol[rowIndex])(uniqGroupedValues)),
+            boardData,
+          ),
+        ),
+  }));
 
   const lengthOfUniqValues = R.length(R.values(uniqGroupedValues)[0]);
   const mapIndexed = R.addIndex(R.map);
@@ -73,18 +75,7 @@ const groupDataset = R.curry((layer, boardData) => {
     rows: mapIndexed((_, index) => ({
       _id: uuidv4(),
       index,
-      cells: R.map(colId => ({
-        _id: uuidv4(),
-        value: uniqGroupedValues[colId]
-          ? uniqGroupedValues[colId][index]
-          : aggFuncMap[layer.columnAggregates[colId]](
-              getValuesOfGrouped(
-                uniqGroupedValues['fc8d530e-41d2-43f0-87ce-9e30ab6f8c06'][index],
-                index,
-                boardData,
-              ),
-            ),
-      }))(colIdsRepresented),
+      cells: R.map(mapGroupedCells(index))(colIdsRepresented),
     }))(new Array(lengthOfUniqValues)),
   };
 });
