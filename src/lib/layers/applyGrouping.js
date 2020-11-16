@@ -19,13 +19,11 @@ const aggFuncMap = {
   },
 };
 
-const getColumnValues = (colId, boardData) => {
-  const colIndex = boardData.columns.findIndex(col => col._id === colId);
-  return R.pipe(
+const getColumnValues = (colId, boardData) =>
+  R.pipe(
     R.pluck('cells'),
-    R.map(row => row[colIndex].value),
+    R.map(row => row[boardData.columns.findIndex(col => col._id === colId)].value),
   )(boardData.rows);
-};
 
 const groupDataset = R.curry((layer, boardData) => {
   if (R.length(R.keys(layer)) === 0) return boardData;
