@@ -40,24 +40,20 @@ io.on('connection', async socket => {
   const refreshInView = cnxn => {
     const slice = cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
     socket.emit('slice', slice);
+    socket.emit('csvEstimate', cnxn.estCSVSize);
+    socket.emit('meta', cnxn.meta);
   };
 
   socket.on('loadDataset', async () => {
     await cnxn.load();
     const slice = cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
     socket.emit('initialDatasetReceived', slice);
+    socket.emit('csvEstimate', cnxn.estCSVSize);
+    socket.emit('meta', cnxn.meta);
   });
 
   socket.on('head', async () => {
     socket.emit('head', cnxn.head);
-  });
-
-  socket.on('meta', async () => {
-    socket.emit('meta', cnxn.meta);
-  });
-
-  socket.on('csvEstimate', async () => {
-    socket.emit('csvEstimate', cnxn.estCSVSize);
   });
 
   socket.on('getSlice', async ({ first, last }) => {
