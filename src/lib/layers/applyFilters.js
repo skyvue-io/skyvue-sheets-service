@@ -9,12 +9,12 @@ const processRow = R.curry((logicalRules, boardData, row) => {
 
   const nestedConditions = logicalRules.find(rule => Array.isArray(rule));
 
-  const cellValueByColumn = colId =>
+  const cellValueByColumnIndex = colId =>
     boardData.columns.findIndex(col => col._id === colId);
 
   const processCondition = cond =>
     predicateMap[cond.predicateType](
-      row.cells[cellValueByColumn(cond.key)].value,
+      row.cells[cellValueByColumnIndex(cond.key)].value,
       cond.value,
     );
 

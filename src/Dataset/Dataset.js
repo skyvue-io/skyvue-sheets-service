@@ -27,7 +27,7 @@ const s3 = new aws.S3(awsConfig);
  *  layers: {
  *    joins: [],
  *    filters: [],
- *    groupings: [],
+ *    groupings: {},
  *    sort: [],
  *    formatting: [],
  *  }
@@ -37,15 +37,15 @@ const s3 = new aws.S3(awsConfig);
 const initial_layers = {
   joins: [],
   filters: [],
-  groupings: [],
+  groupings: {},
   sortings: [],
   formatting: [],
 };
 
-const getCompiled = (layers, baseState) => applyDatasetLayers(layers, baseState);
-// baseState && baseState.layers && !R.whereEq(layers)(initial_layers)
-//   ? applyDatasetLayers(layers, baseState)
-//   : baseState;
+const getCompiled = (layers, baseState) =>
+  baseState && !R.whereEq(layers)(initial_layers)
+    ? applyDatasetLayers(layers, baseState)
+    : baseState;
 
 const Dataset = ({ datasetId, userId }) => {
   const s3Params = {

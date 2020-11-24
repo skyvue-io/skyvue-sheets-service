@@ -60,17 +60,16 @@ io.on('connection', async socket => {
     socket.emit('slice', cnxn.getSlice(first, last));
   });
 
-  socket.on('layer', async layer => {
-    await cnxn.addLayer(layer.layerKey, R.omit(['layerKey'], layer));
+  socket.on('layer', async ({ layerKey, layerData }) => {
+    cnxn.addLayer(layerKey, layerData);
     refreshInView(cnxn);
-
     saveAfterDelay();
   });
 
-  socket.on('clearLayers', async () => {
-    cnxn.clearLayers();
-    saveAfterDelay();
+  socket.on('clearLayers', async params => {
+    cnxn.clearLayers(params);
     refreshInView(cnxn);
+    saveAfterDelay();
   });
 
   socket.on('diff', async data => {
