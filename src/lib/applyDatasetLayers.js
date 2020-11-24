@@ -1,6 +1,7 @@
 const R = require('ramda');
 const applyFilters = require('./layers/applyFilters');
 const applyGrouping = require('./layers/applyGrouping');
+const applySortings = require('./layers/applySortings');
 
 const groupings = {
   // groupedBy: ['fc8d530e-41d2-43f0-87ce-9e30ab6f8c06'],
@@ -30,12 +31,19 @@ const filters = [
   // ],
 ];
 
+const sortings = [
+  {
+    key: '1dd4dfbf-6eff-48c2-bdff-949a1d42ee78',
+    direction: 'desc',
+  },
+];
+
 const applyDatasetLayers = (layers, boardData) =>
   R.pipe(
     R.identity, // future, joins
     applyFilters(layers.filters),
     applyGrouping(layers.groupings),
-    R.identity, // future, sortings,
+    applySortings(sortings),
     R.identity, // future, formatting,
   )(boardData);
 

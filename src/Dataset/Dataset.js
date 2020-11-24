@@ -43,7 +43,7 @@ const initial_layers = {
 };
 
 const getCompiled = (layers, baseState) =>
-  baseState && !R.whereEq(layers)(initial_layers)
+  baseState // && !R.whereEq(layers)(initial_layers)
     ? applyDatasetLayers(layers, baseState)
     : baseState;
 
