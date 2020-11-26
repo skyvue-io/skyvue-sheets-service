@@ -31,19 +31,12 @@ const filters = [
   // ],
 ];
 
-const sortings = [
-  {
-    key: '1dd4dfbf-6eff-48c2-bdff-949a1d42ee78',
-    direction: 'desc',
-  },
-];
-
 const applyDatasetLayers = (layers, boardData) =>
   R.pipe(
     R.identity, // future, joins
     applyFilters(layers.filters),
     applyGrouping(layers.groupings),
-    applySortings(sortings),
+    applySortings(layers.sortings),
     R.identity, // future, formatting,
   )(boardData);
 
