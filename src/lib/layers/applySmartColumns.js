@@ -1,4 +1,5 @@
 const R = require('ramda');
+const { v4: uuidv4 } = require('uuid');
 
 const predicateMap = {
   sum: R.reduce((a, b) => parseFloat(a) + parseFloat(b), 0),
