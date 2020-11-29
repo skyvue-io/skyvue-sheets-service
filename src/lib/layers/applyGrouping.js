@@ -5,7 +5,7 @@ const findMin = require('../../utils/findMin');
 const findRowsWithValues = require('../queries/findRowsWithValues');
 
 const aggFuncMap = {
-  sum: R.reduce((a, b) => parseInt(a, 10) + parseInt(b, 10), 0),
+  sum: R.reduce((a, b) => parseFloat(a) + parseFloat(b), 0),
   mean: R.mean,
   median: R.median,
   countDistinct: arr => [...new Set(arr)].length,

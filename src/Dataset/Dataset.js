@@ -38,6 +38,7 @@ const initial_layers = {
   joins: [],
   filters: [],
   groupings: {},
+  smartColumns: [],
   sortings: [],
   formatting: [],
 };
