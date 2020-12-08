@@ -83,6 +83,11 @@ io.on('connection', async socket => {
     cnxn.runQueuedFunc();
   });
 
+  socket.on('exportToCsv', async fileName => {
+    const s3Url = await cnxn.exportToCSV(fileName);
+    socket.emit('downloadReady', s3Url);
+  });
+
   socket.on('saveDataset', async () => {
     await cnxn.save();
   });
