@@ -116,6 +116,7 @@ const Dataset = ({ datasetId, userId }) => {
       };
     },
     addDiff: async diff => {
+      console.log('hi there', addDiff(diff, baseState)?.columns);
       baseState = addDiff(diff, baseState);
     },
     exportToCSV: async fileName => {
