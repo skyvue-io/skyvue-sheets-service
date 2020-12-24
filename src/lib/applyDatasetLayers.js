@@ -20,6 +20,14 @@ const formatting = [
   { colId: '84de2dbb-8d15-42f0-a0a9-43aebc0d4aa3', format: 'currency' },
 ];
 
+const mapIndexed = R.addIndex(R.map);
+const updateRowIndeces = boardData =>
+  R.assoc(
+    'rows',
+    mapIndexed((row, index) => R.assoc('index', index, row))(boardData.rows),
+    boardData,
+  );
+
 const applyDatasetLayers = (layers, boardData) =>
   R.pipe(
     R.identity, // future, joins
@@ -28,6 +36,7 @@ const applyDatasetLayers = (layers, boardData) =>
     applySmartColumns(layers.smartColumns),
     applySortings(layers.sortings),
     applyFormatting(formatting),
+    updateRowIndeces,
   )(boardData);
 
 module.exports = applyDatasetLayers;
