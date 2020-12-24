@@ -119,20 +119,22 @@ const Dataset = ({ datasetId, userId }) => {
       console.log('hi there', addDiff(diff, baseState)?.columns);
       baseState = addDiff(diff, baseState);
     },
-    exportToCSV: async fileName => {
+    exportToCSV: async (fileName, quantity) => {
       if (!baseState) return;
       const compiled = getCompiled(layers, baseState);
-      const json = boardDataToCSVReadableJSON(compiled);
+      const documents = R.pipe(boardDataToCSVReadableJSON, jsonToCSV, x =>
+        R.splitEvery(x.length / quantity, x),
+      )(compiled);
 
-      await s3
-        .putObject({
-          Bucket: 'skyvue-exported-datasets',
-          Key: `${userId}-${datasetId}`,
-          ContentType: 'text/csv',
-          ContentDisposition: `attachment; filename="${fileName}.csv`,
-          Body: jsonToCSV(boardDataToCSVReadableJSON(compiled)),
-        })
-        .promise();
+      // await s3
+      //   .putObject({
+      //     Bucket: 'skyvue-exported-datasets',
+      //     Key: `${userId}-${datasetId}`,
+      //     ContentType: 'text/csv',
+      //     ContentDisposition: `attachment; filename="${fileName}.csv`,
+      //     Body: jsonToCSV(boardDataToCSVReadableJSON(compiled)),
+      //   })
+      //   .promise();
 
       return `http://skyvue-exported-datasets.s3.amazonaws.com/${userId}-${datasetId}`;
     },
