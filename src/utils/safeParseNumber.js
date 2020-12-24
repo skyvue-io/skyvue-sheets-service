@@ -1,7 +1,11 @@
 const safeParseNumber = input => {
-  const parsed = parseInt(input, 10);
-  // eslint-disable-next-line no-restricted-globals
-  return isNaN(parsed) ? input : parsed;
+  if (input.match(/^-?\d+$/)) {
+    return parseInt(input, 10);
+  }
+  if (input.match(/^\d+\.\d+$/)) {
+    return parseFloat(input);
+  }
+  return input;
 };
 
 module.exports = safeParseNumber;
