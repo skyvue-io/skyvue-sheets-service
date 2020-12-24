@@ -116,27 +116,33 @@ const Dataset = ({ datasetId, userId }) => {
       };
     },
     addDiff: async diff => {
-      console.log('hi there', addDiff(diff, baseState)?.columns);
       baseState = addDiff(diff, baseState);
     },
-    exportToCSV: async (fileName, quantity) => {
+    exportToCSV: async (title, quantity) => {
       if (!baseState) return;
       const compiled = getCompiled(layers, baseState);
-      const documents = R.pipe(boardDataToCSVReadableJSON, jsonToCSV, x =>
+      const documents = R.pipe(boardDataToCSVReadableJSON, x =>
         R.splitEvery(x.length / quantity, x),
       )(compiled);
 
-      // await s3
-      //   .putObject({
-      //     Bucket: 'skyvue-exported-datasets',
-      //     Key: `${userId}-${datasetId}`,
-      //     ContentType: 'text/csv',
-      //     ContentDisposition: `attachment; filename="${fileName}.csv`,
-      //     Body: jsonToCSV(boardDataToCSVReadableJSON(compiled)),
-      //   })
-      //   .promise();
+      const objectUrls = await Promise.all(
+        documents.map(async (doc, index) => {
+          const fileName = `${userId}-${datasetId}-${index}`;
+          await s3
+            .putObject({
+              Bucket: 'skyvue-exported-datasets',
+              Key: fileName,
+              ContentType: 'text/csv',
+              ContentDisposition: `attachment; filename="${title}-${index + 1}.csv`,
+              Body: jsonToCSV(doc),
+            })
+            .promise();
 
-      return `http://skyvue-exported-datasets.s3.amazonaws.com/${userId}-${datasetId}`;
+          return `http://skyvue-exported-datasets.s3.amazonaws.com/${fileName}`;
+        }),
+      );
+
+      return objectUrls;
     },
     save: async () => {
       if (!baseState) return;
