@@ -157,7 +157,23 @@ const Dataset = ({ datasetId, userId }) => {
         })
         .promise();
     },
-    saveAsNew: () => undefined,
+    saveAsNew: async newDatasetId => {
+      const compiled = getCompiled(layers, baseState);
+
+      await s3
+        .putObject({
+          ...s3Params,
+          ContentType: 'application/json',
+          Key: `${userId}-${newDatasetId}`,
+          Body: JSON.stringify({
+            ...compiled,
+            layers: initial_layers,
+          }),
+        })
+        .promise();
+
+      return true;
+    },
     inViewState: () => undefined,
     csvFileSize: () => undefined,
     setBaseState: () => undefined,

@@ -91,6 +91,12 @@ io.on('connection', async socket => {
   socket.on('saveDataset', async () => {
     await cnxn.save();
   });
+
+  socket.on('saveAsNew', async ({ newDatasetId }) => {
+    await cnxn.saveAsNew(newDatasetId);
+    console.log('hello there');
+    socket.emit('duplicateReady', { _id: newDatasetId });
+  });
 });
 
 io.on('disconnect', socket => {
