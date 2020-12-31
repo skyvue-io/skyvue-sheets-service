@@ -7,6 +7,7 @@ const jsonToCSV = require('../lib/jsonToCSV');
 const addDiff = require('../utils/addDiff');
 const addLayer = require('../utils/addLayer');
 const updateCellById = require('../utils/updateCellById');
+const updateColumnById = require('../utils/updateColumnById');
 
 const awsConfig = new aws.Config({
   region: 'us-west-1',
@@ -153,17 +154,20 @@ const Dataset = ({ datasetId, userId }) => {
       const { targetId, changeTarget, prevValue, newValue } =
         changeHistory.find(history => history.revisionId === versionId) ?? {};
 
-      const updated =
+      const updateFunc =
         changeTarget === 'cell'
-          ? updateCellById(
-              targetId,
-              direction === 'undo' ? prevValue : newValue,
-              baseState,
-            )
-          : baseState;
+          ? updateCellById
+          : changeTarget === 'column'
+          ? updateColumnById
+          : (x, y, z) => baseState;
 
-      baseState = updated;
-      return updated;
+      baseState = updateFunc(
+        targetId,
+        direction === 'undo' ? prevValue : newValue,
+        baseState,
+      );
+
+      return baseState;
     },
     save: async () => {
       if (!baseState) return;
