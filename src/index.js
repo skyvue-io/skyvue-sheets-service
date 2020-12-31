@@ -93,8 +93,12 @@ io.on('connection', async socket => {
 
   socket.on('saveAsNew', async ({ newDatasetId }) => {
     await cnxn.saveAsNew(newDatasetId);
-    console.log('hello there');
     socket.emit('duplicateReady', { _id: newDatasetId });
+  });
+
+  socket.on('saveToHistory', change => {
+    console.log('hi there', change);
+    cnxn.saveToHistory(change);
   });
 });
 

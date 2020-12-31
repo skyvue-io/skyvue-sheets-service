@@ -58,6 +58,7 @@ const Dataset = ({ datasetId, userId }) => {
   let baseState;
   let fnQueue;
   let layers = initial_layers;
+  let changeHistory = [];
 
   return {
     get baseState() {
@@ -82,6 +83,10 @@ const Dataset = ({ datasetId, userId }) => {
     },
     addLayer: (layerKey, layer) => {
       layers = addLayer(layerKey, layer, layers);
+    },
+    saveToHistory: change => {
+      changeHistory = [...changeHistory, change];
+      // console.log(changeHistory);
     },
     clearLayers: () => {
       layers = initial_layers;
