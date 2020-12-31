@@ -86,7 +86,6 @@ const Dataset = ({ datasetId, userId }) => {
     },
     saveToHistory: change => {
       changeHistory = [...changeHistory, change];
-      // console.log(changeHistory);
     },
     clearLayers: () => {
       layers = initial_layers;

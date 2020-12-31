@@ -97,7 +97,6 @@ io.on('connection', async socket => {
   });
 
   socket.on('saveToHistory', change => {
-    console.log('hi there', change);
     cnxn.saveToHistory(change);
   });
 });
