@@ -109,8 +109,8 @@ const Dataset = ({ datasetId, userId }) => {
 
       return baseState;
     },
-    getSlice: (start, end, _baseState) => {
-      const compiled = getCompiled(layers, _baseState ?? baseState);
+    getSlice: (start, end) => {
+      const compiled = getCompiled(layers, baseState);
 
       return {
         ...compiled,
@@ -149,13 +149,21 @@ const Dataset = ({ datasetId, userId }) => {
 
       return objectUrls;
     },
-    checkoutToVersion: versionId => {
-      const { targetId, changeTarget, prevValue } =
+    checkoutToVersion: (versionId, direction) => {
+      const { targetId, changeTarget, prevValue, newValue } =
         changeHistory.find(history => history.revisionId === versionId) ?? {};
 
-      if (changeTarget === 'cell') {
-        return updateCellById(targetId, prevValue, baseState);
-      }
+      const updated =
+        changeTarget === 'cell'
+          ? updateCellById(
+              targetId,
+              direction === 'undo' ? prevValue : newValue,
+              baseState,
+            )
+          : baseState;
+
+      baseState = updated;
+      return updated;
     },
     save: async () => {
       if (!baseState) return;
