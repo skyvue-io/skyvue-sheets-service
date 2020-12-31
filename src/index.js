@@ -99,6 +99,13 @@ io.on('connection', async socket => {
   socket.on('saveToHistory', change => {
     cnxn.saveToHistory(change);
   });
+
+  socket.on('checkoutToVersion', ({ versionId, start, end }) => {
+    const data = cnxn.checkoutToVersion(versionId);
+    if (data) {
+      socket.emit('slice', cnxn.getSlice(start, end, data));
+    }
+  });
 });
 
 io.on('disconnect', socket => {

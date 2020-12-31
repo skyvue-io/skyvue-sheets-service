@@ -6,6 +6,7 @@ const boardDataToCSVReadableJSON = require('../lib/boardDataToCSVReadableJSON');
 const jsonToCSV = require('../lib/jsonToCSV');
 const addDiff = require('../utils/addDiff');
 const addLayer = require('../utils/addLayer');
+const updateCellById = require('../utils/updateCellById');
 
 const awsConfig = new aws.Config({
   region: 'us-west-1',
@@ -108,8 +109,8 @@ const Dataset = ({ datasetId, userId }) => {
 
       return baseState;
     },
-    getSlice: (start, end) => {
-      const compiled = getCompiled(layers, baseState);
+    getSlice: (start, end, _baseState) => {
+      const compiled = getCompiled(layers, _baseState ?? baseState);
 
       return {
         ...compiled,
@@ -147,6 +148,14 @@ const Dataset = ({ datasetId, userId }) => {
       );
 
       return objectUrls;
+    },
+    checkoutToVersion: versionId => {
+      const { targetId, changeTarget, prevValue } =
+        changeHistory.find(history => history.revisionId === versionId) ?? {};
+
+      if (changeTarget === 'cell') {
+        return updateCellById(targetId, prevValue, baseState);
+      }
     },
     save: async () => {
       if (!baseState) return;

@@ -24,7 +24,7 @@ const mapIndexed = R.addIndex(R.map);
 const updateRowIndeces = boardData =>
   R.assoc(
     'rows',
-    mapIndexed((row, index) => R.assoc('index', index, row))(boardData.rows),
+    mapIndexed((row, index) => R.assoc('index', index + 1, row))(boardData.rows),
     boardData,
   );
 
