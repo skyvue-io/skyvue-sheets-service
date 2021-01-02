@@ -4,6 +4,9 @@ const env = require('../env');
 const applyDatasetLayers = require('../lib/applyDatasetLayers');
 const boardDataToCSVReadableJSON = require('../lib/boardDataToCSVReadableJSON');
 const jsonToCSV = require('../lib/jsonToCSV');
+const handleColumnTimeTravel = require('../lib/handleColumnTimeTravel');
+const makeBoardDataFromVersion = require('../lib/makeBoardDataFromVersion');
+
 const addDiff = require('../utils/addDiff');
 const addLayer = require('../utils/addLayer');
 const updateCellById = require('../utils/updateCellById');
@@ -103,6 +106,8 @@ const Dataset = ({ datasetId, userId }) => {
     },
     load: async () => {
       head = await s3.headObject(s3Params).promise();
+      console.log(s3Params);
+
       const res = await s3.getObject(s3Params).promise();
       const data = JSON.parse(res.Body.toString('utf-8'));
       baseState = data;
@@ -154,11 +159,18 @@ const Dataset = ({ datasetId, userId }) => {
       const { targetId, changeTarget, prevValue, newValue } =
         changeHistory.find(history => history.revisionId === versionId) ?? {};
 
+      const changeHistoryItem =
+        changeHistory.find(history => history.revisionId === versionId) ?? {};
+
+      const temp = makeBoardDataFromVersion(changeHistoryItem, direction, baseState);
+      console.log(temp);
       const updateFunc =
         changeTarget === 'cell'
           ? updateCellById
           : changeTarget === 'column'
-          ? updateColumnById
+          ? typeof newValue === 'object' || typeof prevValue === 'object'
+            ? handleColumnTimeTravel
+            : updateColumnById
           : (x, y, z) => baseState;
 
       baseState = updateFunc(

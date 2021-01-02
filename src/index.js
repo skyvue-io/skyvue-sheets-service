@@ -56,7 +56,7 @@ io.on('connection', async socket => {
   });
 
   socket.on('getSlice', async ({ first, last }) => {
-    socket.emit('slice', cnxn.getSlice(first, last));
+    socket.emit('slice', cnxn.getSlice(first, last ?? first + DEFAULT_SLICE_END));
   });
 
   socket.on('layer', async ({ layerKey, layerData }) => {
@@ -104,6 +104,8 @@ io.on('connection', async socket => {
     const data = cnxn.checkoutToVersion(versionId, direction);
     if (data) {
       socket.emit('slice', cnxn.getSlice(start, end));
+
+      saveAfterDelay();
     }
   });
 });
