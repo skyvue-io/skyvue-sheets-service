@@ -17,17 +17,24 @@ const makeBoardDataFromVersion = (
   if (changeTarget === 'column') {
     if (secondaryValue) {
       const removedColumn = removedColumns[targetId];
-      console.log(removedColumn);
+      const columns = handleColumnTimeTravel(targetId, targetValue, boardData);
+      console.log(targetValue, secondaryValue);
       return {
-        ...boardData,
-        columns: handleColumnTimeTravel(targetId, targetValue, boardData),
+        ...columns,
         rows:
           targetValue && secondaryValue.changeTarget === 'cells'
             ? boardData.rows.map((row, index) => ({
                 ...row,
                 cells: [...row.cells, removedColumn[index]],
               }))
-            : boardData.rows,
+            : boardData.rows.map((row, index) => ({
+                ...row,
+                cells: row.cells.filter(
+                  (cell, index) =>
+                    index !==
+                    boardData.columns.findIndex(col => col._id === targetId),
+                ),
+              })),
       };
     }
     return updateColumnById(targetId, targetValue, boardData);
