@@ -170,9 +170,6 @@ const Dataset = ({ datasetId, userId }) => {
       return objectUrls;
     },
     checkoutToVersion: (versionId, direction) => {
-      const { targetId, changeTarget, prevValue, newValue } =
-        changeHistory.find(history => history.revisionId === versionId) ?? {};
-
       const changeHistoryItem =
         changeHistory.find(history => history.revisionId === versionId) ?? {};
 
@@ -182,21 +179,6 @@ const Dataset = ({ datasetId, userId }) => {
         baseState,
         removedColumns,
       );
-      // baseState = temp;
-      // const updateFunc =
-      //   changeTarget === 'cell'
-      //     ? updateCellById
-      //     : changeTarget === 'column'
-      //     ? typeof newValue === 'object' || typeof prevValue === 'object'
-      //       ? handleColumnTimeTravel
-      //       : updateColumnById
-      //     : (x, y, z) => baseState;
-
-      // baseState = updateFunc(
-      //   targetId,
-      //   direction === 'undo' ? prevValue : newValue,
-      //   baseState,
-      // );
 
       return baseState;
     },

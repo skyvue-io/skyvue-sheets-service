@@ -18,7 +18,7 @@ const makeBoardDataFromVersion = (
     if (secondaryValue) {
       const removedColumn = removedColumns[targetId];
       const columns = handleColumnTimeTravel(targetId, targetValue, boardData);
-      console.log(targetValue, secondaryValue);
+
       return {
         ...columns,
         rows:
