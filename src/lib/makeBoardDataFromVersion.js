@@ -7,6 +7,7 @@ const makeBoardDataFromVersion = (
   { targetId, changeTarget, prevValue, newValue, secondaryValue },
   direction,
   boardData,
+  removedColumns,
 ) => {
   const targetValue = direction === 'undo' ? prevValue : newValue;
 
@@ -15,14 +16,16 @@ const makeBoardDataFromVersion = (
   }
   if (changeTarget === 'column') {
     if (secondaryValue) {
+      const removedColumn = removedColumns[targetId];
+      console.log(removedColumn);
       return {
         ...boardData,
         columns: handleColumnTimeTravel(targetId, targetValue, boardData),
         rows:
           targetValue && secondaryValue.changeTarget === 'cells'
-            ? boardData.rows.map(row => ({
+            ? boardData.rows.map((row, index) => ({
                 ...row,
-                targetValue,
+                cells: [...row.cells, removedColumn[index]],
               }))
             : boardData.rows,
       };

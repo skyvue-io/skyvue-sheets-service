@@ -64,6 +64,7 @@ const Dataset = ({ datasetId, userId }) => {
   let fnQueue;
   let layers = initial_layers;
   let changeHistory = [];
+  const removedColumns = {};
 
   return {
     get baseState() {
@@ -105,13 +106,15 @@ const Dataset = ({ datasetId, userId }) => {
       fnQueue = undefined;
     },
     load: async () => {
-      head = await s3.headObject(s3Params).promise();
-      console.log(s3Params);
-
-      const res = await s3.getObject(s3Params).promise();
-      const data = JSON.parse(res.Body.toString('utf-8'));
-      baseState = data;
-      layers = baseState.layers ?? initial_layers;
+      try {
+        head = await s3.headObject(s3Params).promise();
+        const res = await s3.getObject(s3Params).promise();
+        const data = JSON.parse(res.Body.toString('utf-8'));
+        baseState = data;
+        layers = baseState.layers ?? initial_layers;
+      } catch (e) {
+        console.log('error loading dataset from s3', e);
+      }
 
       return baseState;
     },
@@ -127,7 +130,18 @@ const Dataset = ({ datasetId, userId }) => {
       };
     },
     addDiff: async diff => {
+      const initialBaseState = baseState;
       baseState = addDiff(diff, baseState);
+
+      if (diff.colDiff?.type === 'removal') {
+        const removedColumn = diff.colDiff.diff[0];
+        if (!removedColumn) return;
+        const colIndex = initialBaseState.columns.findIndex(
+          col => col._id === removedColumn?._id,
+        );
+        const cellsInColumn = initialBaseState.rows.map(row => row.cells[colIndex]);
+        removedColumns[removedColumn._id] = cellsInColumn;
+      }
     },
     exportToCSV: async (title, quantity) => {
       if (!baseState) return;
@@ -162,22 +176,27 @@ const Dataset = ({ datasetId, userId }) => {
       const changeHistoryItem =
         changeHistory.find(history => history.revisionId === versionId) ?? {};
 
-      const temp = makeBoardDataFromVersion(changeHistoryItem, direction, baseState);
-      console.log(temp);
-      const updateFunc =
-        changeTarget === 'cell'
-          ? updateCellById
-          : changeTarget === 'column'
-          ? typeof newValue === 'object' || typeof prevValue === 'object'
-            ? handleColumnTimeTravel
-            : updateColumnById
-          : (x, y, z) => baseState;
-
-      baseState = updateFunc(
-        targetId,
-        direction === 'undo' ? prevValue : newValue,
+      baseState = makeBoardDataFromVersion(
+        changeHistoryItem,
+        direction,
         baseState,
+        removedColumns,
       );
+      // baseState = temp;
+      // const updateFunc =
+      //   changeTarget === 'cell'
+      //     ? updateCellById
+      //     : changeTarget === 'column'
+      //     ? typeof newValue === 'object' || typeof prevValue === 'object'
+      //       ? handleColumnTimeTravel
+      //       : updateColumnById
+      //     : (x, y, z) => baseState;
+
+      // baseState = updateFunc(
+      //   targetId,
+      //   direction === 'undo' ? prevValue : newValue,
+      //   baseState,
+      // );
 
       return baseState;
     },
