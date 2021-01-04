@@ -40,6 +40,15 @@ const makeBoardDataFromVersion = (
     return updateColumnById(targetId, targetValue, boardData);
   }
 
+  if (changeTarget === 'row') {
+    return {
+      ...boardData,
+      rows: targetValue
+        ? R.insert(targetValue.index - 1, targetValue, boardData.rows)
+        : boardData.rows.filter(row => row._id !== targetId),
+    };
+  }
+
   return boardData;
 };
 
