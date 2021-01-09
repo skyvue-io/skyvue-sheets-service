@@ -14,6 +14,7 @@ const predicateMap = {
 };
 
 const processRow = R.curry((logicalRules, boardData, row) => {
+  if (logicalRules.length === 1) return boardData;
   const topLevelOperator = logicalRules[0];
   const topLevelConditions = logicalRules
     .slice(1, logicalRules.length)
