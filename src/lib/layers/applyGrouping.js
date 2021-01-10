@@ -48,9 +48,6 @@ const groupDataset = R.curry((layer, boardData) => {
     return aggregateKeys.includes(colId)
       ? {
           ...col,
-          value: `${columnAggregates[colId]} of ${col.value.slice(
-            `${columnAggregates[colId]} of`.length,
-          )}`,
         }
       : { ...col };
   };
