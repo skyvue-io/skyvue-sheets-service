@@ -100,11 +100,16 @@ io.on('connection', async socket => {
     cnxn.saveToHistory(change);
   });
 
+  socket.on('toggleLayer', async ({ toggle, visible }) => {
+    await cnxn.toggleLayer(toggle, visible);
+    refreshInView(cnxn);
+    saveAfterDelay();
+  });
+
   socket.on('checkoutToVersion', ({ versionId, start, end, direction }) => {
     const data = cnxn.checkoutToVersion(versionId, direction);
     if (data) {
       socket.emit('slice', cnxn.getSlice(start, end));
-
       saveAfterDelay();
     }
   });

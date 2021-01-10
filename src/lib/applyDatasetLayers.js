@@ -28,8 +28,9 @@ const updateRowIndeces = boardData =>
     boardData,
   );
 
-const applyDatasetLayers = (layers, boardData) =>
-  R.pipe(
+const applyDatasetLayers = (layers, boardData) => {
+  console.log(boardData.layerToggles);
+  return R.pipe(
     R.identity, // future, joins
     applyFilters(layers.filters),
     applyGrouping(layers.groupings),
@@ -38,5 +39,6 @@ const applyDatasetLayers = (layers, boardData) =>
     applyFormatting(formatting),
     updateRowIndeces,
   )(boardData);
+};
 
 module.exports = applyDatasetLayers;

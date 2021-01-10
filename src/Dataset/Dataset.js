@@ -96,6 +96,17 @@ const Dataset = ({ datasetId, userId }) => {
     clearLayers: () => {
       layers = initial_layers;
     },
+    toggleLayer: async (toggle, visible) => {
+      baseState = {
+        ...baseState,
+        layerToggles: {
+          ...baseState.layerToggles,
+          [toggle]: visible,
+        },
+      };
+
+      return baseState;
+    },
     runQueuedFunc: () => {
       fnQueue?.();
     },
