@@ -5,10 +5,7 @@ const findMin = require('../../utils/findMin');
 const findRowsWithValues = require('../queries/findRowsWithValues');
 
 const aggFuncMap = {
-  sum: R.reduce((a, b) => {
-    console.log(a, b);
-    return parseFloat(a) + parseFloat(b);
-  }, 0),
+  sum: R.reduce((a, b) => parseFloat(a) + parseFloat(b), 0),
   mean: R.mean,
   median: R.median,
   countDistinct: arr => [...new Set(arr)].length,
@@ -29,7 +26,8 @@ const getColumnValues = (colId, boardData) =>
   )(boardData.rows);
 
 const groupDataset = R.curry((layer, boardData) => {
-  if (R.length(R.keys(layer)) === 0) return boardData;
+  console.log(layer);
+  if (R.length(R.keys(layer)) < 2) return boardData;
 
   const { columns } = boardData;
   const { groupedBy, columnAggregates } = layer;
@@ -50,7 +48,9 @@ const groupDataset = R.curry((layer, boardData) => {
     return aggregateKeys.includes(colId)
       ? {
           ...col,
-          value: `${columnAggregates[colId]} of ${col.value}`,
+          value: `${columnAggregates[colId]} of ${col.value.slice(
+            `${columnAggregates[colId]} of`.length,
+          )}`,
         }
       : { ...col };
   };
@@ -60,10 +60,13 @@ const groupDataset = R.curry((layer, boardData) => {
     value: uniqGroupedValues[colId]
       ? uniqGroupedValues[colId][rowIndex]
       : aggFuncMap[columnAggregates[colId]](
-          findRowsWithValues(
-            R.values(R.map(groupedCol => groupedCol[rowIndex])(uniqGroupedValues)),
-            boardData,
-          ),
+          R.pipe(
+            findRowsWithValues(
+              R.values(R.map(groupedCol => groupedCol[rowIndex])(uniqGroupedValues)),
+            ),
+            R.map(R.find(R.propEq('colId', colId))),
+            R.map(R.prop('value')),
+          )(boardData),
         ),
   }));
 

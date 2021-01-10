@@ -106,6 +106,7 @@ const Dataset = ({ datasetId, userId }) => {
       fnQueue = undefined;
     },
     load: async () => {
+      console.log('attempting to load...', s3Params);
       try {
         head = await s3.headObject(s3Params).promise();
         const res = await s3.getObject(s3Params).promise();
@@ -113,7 +114,7 @@ const Dataset = ({ datasetId, userId }) => {
         baseState = data;
         layers = baseState.layers ?? initial_layers;
       } catch (e) {
-        console.log('error loading dataset from s3', e);
+        console.log('error loading dataset from s3', s3Params, e);
       }
 
       return baseState;
