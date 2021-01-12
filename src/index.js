@@ -74,7 +74,6 @@ io.on('connection', async socket => {
   socket.on('diff', async data => {
     await cnxn.addDiff(data);
     saveAfterDelay();
-    socket.emit('returnDiff', { data: cnxn.baseState });
   });
 
   socket.on('unload', async () => {
