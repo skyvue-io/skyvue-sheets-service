@@ -37,10 +37,18 @@ io.on('connection', async socket => {
   };
 
   const refreshInView = cnxn => {
-    const slice = cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
-    socket.emit('slice', slice);
-    socket.emit('csvEstimate', cnxn.estCSVSize);
-    socket.emit('meta', cnxn.meta);
+    try {
+      const slice = cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
+      socket.emit('slice', slice);
+      socket.emit('csvEstimate', cnxn.estCSVSize);
+      socket.emit('meta', cnxn.meta);
+    } catch (e) {
+      socket.emit('boardError', {
+        message: e.message,
+        type: e.type,
+        target: e._id,
+      });
+    }
   };
 
   socket.on('loadDataset', async () => {
@@ -60,9 +68,17 @@ io.on('connection', async socket => {
   });
 
   socket.on('layer', async ({ layerKey, layerData }) => {
-    cnxn.addLayer(layerKey, layerData);
-    refreshInView(cnxn);
-    saveAfterDelay();
+    try {
+      cnxn.addLayer(layerKey, layerData);
+      refreshInView(cnxn);
+      saveAfterDelay();
+    } catch (e) {
+      socket.emit('boardError', {
+        message: e.message,
+        type: e.type,
+        target: e._id,
+      });
+    }
   });
 
   socket.on('clearLayers', async params => {
