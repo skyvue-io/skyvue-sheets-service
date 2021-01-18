@@ -1,57 +1,66 @@
 const R = require('ramda');
 const { v4: uuidv4 } = require('uuid');
+const math = require('mathjs');
+const findCellValueByCoordinates = require('../findCellValueByCoordinates');
+const findColumnIndexById = require('../findColumnIndexById');
 
-const predicateMap = {
-  sum: R.reduce((a, b) => parseFloat(a) + parseFloat(b), 0),
-  divide: R.divide,
-  subtract: R.subtract,
-  concat: (values, delim) => values.join(delim ?? ''),
-  avg: R.mean,
+const CONTENTS_IN_PARENS = /\((.*)\)/;
+
+const replaceExpWithValues = (expression, rowIndex, boardData) => {
+  const test = expression.split(' ').map(x => {
+    const returned =
+      x.startsWith('col(') && x.endsWith(')')
+        ? x
+            .replace(CONTENTS_IN_PARENS, x =>
+              findCellValueByCoordinates(
+                [rowIndex, findColumnIndexById(x.slice(1, x.length - 1), boardData)],
+                boardData,
+              ),
+            )
+            .slice('col'.length)
+        : x;
+
+    return returned;
+  });
+
+  return test.join('');
 };
 
-const mapDataTypeToPredicate = {
-  sum: 'number',
-  divide: 'number',
-  subtract: 'number',
-  concat: 'string',
-  avg: 'number',
-};
+const handleParsingExpression = (expression, rowIndex, boardData) =>
+  math.evaluate(replaceExpWithValues(expression, rowIndex, boardData));
 
-const applySmartColumns = R.curry((sortLayer, boardData) => {
+const mapIndexed = R.addIndex(R.map);
+
+const applySmartColumns = R.curry((layers, boardData) => {
   const columns = R.insertAll(
     boardData.columns.length,
-    sortLayer.map(layer => {
-      const { predicate, columnName, _id } = layer;
+    layers.map(layer => {
+      const { columnName } = layer;
       return {
-        _id,
-        dataType: mapDataTypeToPredicate[predicate],
+        _id: uuidv4(),
+        dataType: 'number',
         value: columnName,
       };
     }),
     boardData.columns,
   );
 
-  const rows = R.map(row => ({
+  const rows = mapIndexed((row, index) => ({
     ...row,
     cells: [
       ...row.cells,
-      ...R.map(layer => {
-        const { predicate, columns } = layer;
-        const colIndeces = columns.map(col =>
-          boardData.columns.findIndex(_col => col === _col._id),
-        );
-        const vals = colIndeces.map(index => row.cells[index].value);
-        return {
-          _id: uuidv4(),
-          value: predicateMap[predicate](
-            ['divide', 'subtract'].includes(predicate) ? (vals[0], vals[1]) : vals,
-          ),
-        };
-      })(sortLayer),
+      ...R.map(layer => ({
+        _id: uuidv4(),
+        value: handleParsingExpression(layer.expression, index, boardData),
+      }))(layers),
     ],
   }))(boardData.rows);
 
-  return R.pipe(R.assoc('columns', columns), R.assoc('rows', rows))(boardData);
+  return {
+    ...boardData,
+    columns,
+    rows,
+  };
 });
 
 module.exports = applySmartColumns;

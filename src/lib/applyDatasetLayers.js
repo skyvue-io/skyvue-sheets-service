@@ -5,17 +5,6 @@ const applyGrouping = require('./layers/applyGrouping');
 const applySmartColumns = require('./layers/applySmartColumns');
 const applySortings = require('./layers/applySortings');
 
-const smartColumns = [
-  {
-    _id: 'test',
-    columns: [
-      '84de2dbb-8d15-42f0-a0a9-43aebc0d4aa3',
-      '8ebadc7a-fdaa-4ceb-9e2a-ccc7f9c97886',
-    ],
-    predicate: 'concat',
-  },
-];
-
 const formatting = [
   { colId: '84de2dbb-8d15-42f0-a0a9-43aebc0d4aa3', format: 'currency' },
 ];
@@ -28,12 +17,20 @@ const updateRowIndeces = boardData =>
     boardData,
   );
 
+const smartColumns = [
+  {
+    expression:
+      'col(25176d8a-8a4d-436e-9215-cd03059b3642) + col(a1fc2674-341d-4124-b22e-fd95f920ee2f)',
+    columnName: 'test column',
+  },
+];
+
 const applyDatasetLayers = (layers, boardData) =>
   R.pipe(
     R.identity, // future, joins
     applyFilters(layers.filters),
     applyGrouping(layers.groupings),
-    applySmartColumns(layers.smartColumns),
+    applySmartColumns(smartColumns),
     applySortings(layers.sortings),
     applyFormatting(formatting),
     updateRowIndeces,
