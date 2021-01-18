@@ -4,13 +4,10 @@ const env = require('../env');
 const applyDatasetLayers = require('../lib/applyDatasetLayers');
 const boardDataToCSVReadableJSON = require('../lib/boardDataToCSVReadableJSON');
 const jsonToCSV = require('../lib/jsonToCSV');
-const handleColumnTimeTravel = require('../lib/handleColumnTimeTravel');
 const makeBoardDataFromVersion = require('../lib/makeBoardDataFromVersion');
 
 const addDiff = require('../utils/addDiff');
 const addLayer = require('../utils/addLayer');
-const updateCellById = require('../utils/updateCellById');
-const updateColumnById = require('../utils/updateColumnById');
 
 const awsConfig = new aws.Config({
   region: 'us-west-1',

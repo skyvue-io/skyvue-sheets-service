@@ -20,6 +20,7 @@ const handleParsingExpression = (expression, rowIndex, boardData) =>
 const mapIndexed = R.addIndex(R.map);
 
 const applySmartColumns = R.curry((layers, boardData) => {
+  if (boardData.layerToggles.smartColumns === false) return boardData;
   const columns = R.insertAll(
     boardData.columns.length,
     layers.map(layer => {
@@ -28,6 +29,7 @@ const applySmartColumns = R.curry((layers, boardData) => {
         _id,
         dataType: 'number',
         value: columnName,
+        isSmartColumn: true,
       };
     }),
     boardData.columns,
