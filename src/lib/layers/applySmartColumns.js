@@ -35,9 +35,9 @@ const applySmartColumns = R.curry((layers, boardData) => {
   const columns = R.insertAll(
     boardData.columns.length,
     layers.map(layer => {
-      const { columnName } = layer;
+      const { columnName, _id } = layer;
       return {
-        _id: uuidv4(),
+        _id,
         dataType: 'number',
         value: columnName,
       };
