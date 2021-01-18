@@ -21,17 +21,17 @@ const mapIndexed = R.addIndex(R.map);
 
 const applySmartColumns = R.curry((layers, boardData) => {
   if (boardData.layerToggles.smartColumns === false) return boardData;
+  console.log(
+    layers,
+    boardData.columns.map(col => col._id),
+  );
   const columns = R.insertAll(
     boardData.columns.length,
-    layers.map(layer => {
-      const { columnName, _id } = layer;
-      return {
-        _id,
-        dataType: 'number',
-        value: columnName,
-        isSmartColumn: true,
-      };
-    }),
+    layers.map(layer => ({
+      ...layer,
+      dataType: 'number',
+      isSmartColumn: true,
+    })),
     boardData.columns,
   );
 
