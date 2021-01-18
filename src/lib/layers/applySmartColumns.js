@@ -4,7 +4,6 @@ const math = require('mathjs');
 const findCellValueByCoordinates = require('../findCellValueByCoordinates');
 const findColumnIndexById = require('../findColumnIndexById');
 
-const CONTENTS_IN_PARENS = /\((.*)\)/;
 const UUID_REGEX = /\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b/g;
 
 const replaceExpWithValues = (expression, rowIndex, boardData) =>
