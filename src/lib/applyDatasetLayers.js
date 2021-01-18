@@ -29,9 +29,9 @@ const smartColumns = [
 const applyDatasetLayers = (layers, boardData) =>
   R.pipe(
     R.identity, // future, joins
+    applySmartColumns(smartColumns),
     applyFilters(layers.filters),
     applyGrouping(layers.groupings),
-    applySmartColumns(smartColumns),
     applySortings(layers.sortings),
     applyFormatting(formatting),
     updateRowIndeces,
