@@ -5,26 +5,15 @@ const findCellValueByCoordinates = require('../findCellValueByCoordinates');
 const findColumnIndexById = require('../findColumnIndexById');
 
 const CONTENTS_IN_PARENS = /\((.*)\)/;
+const UUID_REGEX = /\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b/g;
 
-const replaceExpWithValues = (expression, rowIndex, boardData) => {
-  const test = expression.split(' ').map(x => {
-    const returned =
-      x.startsWith('col(') && x.endsWith(')')
-        ? x
-            .replace(CONTENTS_IN_PARENS, x =>
-              findCellValueByCoordinates(
-                [rowIndex, findColumnIndexById(x.slice(1, x.length - 1), boardData)],
-                boardData,
-              ),
-            )
-            .slice('col'.length)
-        : x;
-
-    return returned;
-  });
-
-  return test.join('');
-};
+const replaceExpWithValues = (expression, rowIndex, boardData) =>
+  expression.replace(UUID_REGEX, x =>
+    findCellValueByCoordinates(
+      [rowIndex, findColumnIndexById(x, boardData)],
+      boardData,
+    ),
+  );
 
 const handleParsingExpression = (expression, rowIndex, boardData) =>
   math.evaluate(replaceExpWithValues(expression, rowIndex, boardData));
