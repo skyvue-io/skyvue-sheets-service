@@ -5,7 +5,7 @@ const predicateMap = {
   equals: (a, b) => a == b,
   // eslint-disable-next-line eqeqeq
   notEquals: (a, b) => a != b,
-  contains: (a, b) => b.includes(a),
+  contains: (a, b) => a.includes(b),
   lessThan: (a, b) => a < b,
   lessThanEqualTo: (a, b) => a <= b,
   greaterThan: (a, b) => a > b,
