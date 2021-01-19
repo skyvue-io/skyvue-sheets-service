@@ -80,9 +80,10 @@ const Dataset = ({ datasetId, userId }) => {
     },
     get estCSVSize() {
       if (!baseState) return;
+      const compiled = getCompiled(layers, baseState);
       return R.pipe(boardDataToCSVReadableJSON, jsonToCSV, csv =>
         Buffer.byteLength(csv, 'uft8'),
-      )(baseState);
+      )(compiled);
     },
     addLayer: (layerKey, layer) => {
       layers = addLayer(layerKey, layer, layers);
