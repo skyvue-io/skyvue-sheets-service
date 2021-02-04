@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/skyvue-io/skyvue-sheets-service#readme",
   "dependencies": {
+    "@formulajs/formulajs": "^2.6.2",
     "aws-sdk": "^2.784.0",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",

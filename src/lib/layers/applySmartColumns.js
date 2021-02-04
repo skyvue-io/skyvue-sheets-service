@@ -1,44 +1,32 @@
 const R = require('ramda');
 const { v4: uuidv4 } = require('uuid');
-const math = require('mathjs');
 const findCellValueByCoordinates = require('../findCellValueByCoordinates');
 const findColumnIndexById = require('../findColumnIndexById');
 const SyntaxError = require('../../errors/SyntaxError');
+const evaluateExpression = require('../evaluateExpression');
 
 const UUID_REGEX = /\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b/g;
-const SPLIT_ON_COMMAS_WITH_WHITESPACE = /,\s*/;
-const EXTRACT_FROM_PARENS_REGEX = /\(([^)]+)\)/;
-const EXTRACT_FROM_QUOTES_REGEX = /"([^']+)"/;
-
-const extractFromConcatString = R.pipe(
-  R.match(EXTRACT_FROM_PARENS_REGEX),
-  R.prop(1),
-  R.split(SPLIT_ON_COMMAS_WITH_WHITESPACE),
-  R.map(word =>
-    word.charAt(0) === '"' && word.charAt(word.length - 1) === '"'
-      ? word
-      : `"${word}"`,
-  ),
-  R.map(word => (word === '" "' ? ' ' : word.match(EXTRACT_FROM_QUOTES_REGEX)?.[1])),
-  R.join(''),
-);
+// const SPLIT_ON_COMMAS_WITH_WHITESPACE = /,\s*/;
+// const EXTRACT_FROM_PARENS_REGEX = /\(([^)]+)\)/;
+// const EXTRACT_FROM_QUOTES_REGEX = /"([^']+)"/;
 
 const replaceExpWithValues = (expression, rowIndex, boardData) =>
-  expression.replace(UUID_REGEX, x =>
-    findCellValueByCoordinates(
-      [rowIndex, findColumnIndexById(x, boardData)],
-      boardData,
+  R.pipe(
+    R.replace(UUID_REGEX, x =>
+      findCellValueByCoordinates(
+        [rowIndex, findColumnIndexById(x, boardData)],
+        boardData,
+      ),
     ),
-  );
+    R.replace(/ = /g, '==='),
+  )(expression);
 
 const handleParsingExpression = (expression, rowIndex, col, boardData) => {
   try {
     const filledVariables = replaceExpWithValues(expression, rowIndex, boardData);
-    if (col.dataType === 'string') {
-      return extractFromConcatString(filledVariables);
-    }
-    return math.evaluate(filledVariables);
+    return evaluateExpression(filledVariables);
   } catch (e) {
+    console.log(e);
     throw new SyntaxError(col._id);
   }
 };
