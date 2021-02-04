@@ -26,7 +26,7 @@ const getColumnValues = (colId, boardData) =>
   )(boardData.rows);
 
 const groupDataset = R.curry((layer, boardData) => {
-  if (boardData.layerToggles.groupings === false) return boardData;
+  if (!boardData.layerToggles?.groupings) return boardData;
   if (R.length(R.keys(layer)) < 2) return boardData;
 
   const { columns } = boardData;

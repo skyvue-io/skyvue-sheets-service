@@ -1,10 +1,12 @@
 const aws = require('aws-sdk');
 const R = require('ramda');
 const env = require('../env');
+
 const applyDatasetLayers = require('../lib/applyDatasetLayers');
 const boardDataToCSVReadableJSON = require('../lib/boardDataToCSVReadableJSON');
 const jsonToCSV = require('../lib/jsonToCSV');
 const makeBoardDataFromVersion = require('../lib/makeBoardDataFromVersion');
+const loadDataset = require('../services/loadDataset');
 
 const addDiff = require('../utils/addDiff');
 const addLayer = require('../utils/addLayer');
@@ -37,7 +39,18 @@ const s3 = new aws.S3(awsConfig);
  */
 
 const initial_layers = {
-  joins: [],
+  joins: {
+    joinType: 'full',
+    condition: {
+      datasetId: '601c7f25e6c34ab01dc5f726',
+      on: [
+        {
+          '757909e0-3045-44cb-87d9-853c2595cfbc':
+            'd936f989-82fe-49c1-9483-2eacfe9c43bd',
+        },
+      ],
+    },
+  },
   filters: [],
   groupings: {},
   smartColumns: [],
@@ -45,15 +58,11 @@ const initial_layers = {
   formatting: [],
 };
 
-const getCompiled = (layers, baseState) =>
-  baseState // && !R.whereEq(layers)(initial_layers)
-    ? applyDatasetLayers(layers, baseState)
-    : baseState;
-
 const Dataset = ({ datasetId, userId }) => {
+  // todo build authentication that validates a userId has edit privileges
   const s3Params = {
     Bucket: 'skyvue-datasets',
-    Key: `${userId}-${datasetId}`,
+    Key: datasetId,
   };
 
   let head;
@@ -61,7 +70,36 @@ const Dataset = ({ datasetId, userId }) => {
   let fnQueue;
   let layers = initial_layers;
   let changeHistory = [];
+  // The archive for removed columns
   const removedColumns = {};
+  // The cache for compiled boardData objects for each boardId that is joined
+  const joinedDatasets = {};
+
+  let counter = 0;
+  const getCompiled = async (layers, baseState) => {
+    if (
+      counter === 0 &&
+      R.keys(layers.joins).length > 0 &&
+      !(layers.joins.condition.datasetId in joinedDatasets)
+    ) {
+      console.log('getcompiled');
+      counter += 1;
+      // counter is temporary until I tie in real prod data
+      const { joins } = layers;
+
+      const joinedDataset = await loadDataset(joins.condition.datasetId);
+      if (joinedDataset) {
+        joinedDatasets[joins.condition.datasetId] = await getCompiled(
+          joinedDataset?.layers ?? initial_layers,
+          joinedDataset,
+        );
+      }
+    }
+
+    return baseState // && !R.whereEq(layers)(initial_layers)
+      ? applyDatasetLayers(layers, joinedDatasets, baseState)
+      : baseState;
+  };
 
   return {
     get baseState() {
@@ -78,9 +116,9 @@ const Dataset = ({ datasetId, userId }) => {
     get layers() {
       return layers;
     },
-    get estCSVSize() {
+    estCSVSize: async () => {
       if (!baseState) return;
-      const compiled = getCompiled(layers, baseState);
+      const compiled = await getCompiled(layers, baseState);
       return R.pipe(boardDataToCSVReadableJSON, jsonToCSV, csv =>
         Buffer.byteLength(csv, 'uft8'),
       )(compiled);
@@ -128,8 +166,8 @@ const Dataset = ({ datasetId, userId }) => {
 
       return baseState;
     },
-    getSlice: (start, end) => {
-      const compiled = getCompiled(layers, baseState);
+    getSlice: async (start, end) => {
+      const compiled = await getCompiled(layers, baseState);
 
       return {
         ...compiled,
@@ -155,14 +193,14 @@ const Dataset = ({ datasetId, userId }) => {
     },
     exportToCSV: async (title, quantity) => {
       if (!baseState) return;
-      const compiled = getCompiled(layers, baseState);
+      const compiled = await getCompiled(layers, baseState);
       const documents = R.pipe(boardDataToCSVReadableJSON, x =>
         R.splitEvery(x.length / quantity, x),
       )(compiled);
 
       const objectUrls = await Promise.all(
         documents.map(async (doc, index) => {
-          const fileName = `${userId}-${datasetId}-${index}`;
+          const fileName = `${datasetId}-${index}`;
           await s3
             .putObject({
               Bucket: 'skyvue-exported-datasets',
@@ -206,13 +244,13 @@ const Dataset = ({ datasetId, userId }) => {
         .promise();
     },
     saveAsNew: async newDatasetId => {
-      const compiled = getCompiled(layers, baseState);
+      const compiled = await getCompiled(layers, baseState);
 
       await s3
         .putObject({
           ...s3Params,
           ContentType: 'application/json',
-          Key: `${userId}-${newDatasetId}`,
+          Key: newDatasetId,
           Body: JSON.stringify({
             ...compiled,
             layers: initial_layers,

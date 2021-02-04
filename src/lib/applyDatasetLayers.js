@@ -4,6 +4,7 @@ const applyFormatting = require('./layers/applyFormatting');
 const applyGrouping = require('./layers/applyGrouping');
 const applySmartColumns = require('./layers/applySmartColumns');
 const applySortings = require('./layers/applySortings');
+const applyJoins = require('./layers/applyJoins');
 
 const formatting = [
   { colId: '84de2dbb-8d15-42f0-a0a9-43aebc0d4aa3', format: 'currency' },
@@ -28,10 +29,20 @@ const smartColumns = [
   },
 ];
 
-const applyDatasetLayers = (layers, boardData) =>
+/*
+  joinType: 'full' | 'left' | 'right' | 'inner';
+  condition: {
+    colId: string;
+    on: Array<{
+      [key: string]: string; // colIdOfMainDataset === colIdOfJoinedDataset
+    }>;
+  };
+*/
+
+const applyDatasetLayers = (layers, joinedData, boardData) =>
   R.pipe(
     R.assoc('errors', []),
-    R.identity, // future, joins
+    applyJoins(joinedData, layers.joins), // future, joins
     applySmartColumns(layers.smartColumns),
     applyFilters(layers.filters),
     applyGrouping(layers.groupings),

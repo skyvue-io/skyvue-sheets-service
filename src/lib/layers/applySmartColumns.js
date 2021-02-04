@@ -34,8 +34,7 @@ const handleParsingExpression = (expression, rowIndex, col, boardData) => {
 const mapIndexed = R.addIndex(R.map);
 
 const applySmartColumns = R.curry((layers, boardData) => {
-  if (boardData.layerToggles.smartColumns === false || layers.length === 0)
-    return boardData;
+  if (!boardData.layerToggles?.smartColumns || layers.length === 0) return boardData;
   try {
     const appendSmartColumnToDataset = R.curry((smartColumn, boardData) => ({
       ...boardData,

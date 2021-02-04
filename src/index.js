@@ -36,11 +36,11 @@ io.on('connection', async socket => {
     }, 5000);
   };
 
-  const refreshInView = cnxn => {
+  const refreshInView = async cnxn => {
     try {
-      const slice = cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
+      const slice = await cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
       socket.emit('slice', slice);
-      socket.emit('csvEstimate', cnxn.estCSVSize);
+      socket.emit('csvEstimate', await cnxn.estCSVSize());
       socket.emit('meta', cnxn.meta);
     } catch (e) {
       socket.emit('boardError', {
@@ -53,9 +53,9 @@ io.on('connection', async socket => {
 
   socket.on('loadDataset', async () => {
     await cnxn.load();
-    const slice = cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
+    const slice = await cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
     socket.emit('initialDatasetReceived', slice);
-    socket.emit('csvEstimate', cnxn.estCSVSize);
+    socket.emit('csvEstimate', await cnxn.estCSVSize());
     socket.emit('meta', cnxn.meta);
   });
 
@@ -64,13 +64,16 @@ io.on('connection', async socket => {
   });
 
   socket.on('getSlice', async ({ first, last }) => {
-    socket.emit('slice', cnxn.getSlice(first, last ?? first + DEFAULT_SLICE_END));
+    socket.emit(
+      'slice',
+      await cnxn.getSlice(first, last ?? first + DEFAULT_SLICE_END),
+    );
   });
 
   socket.on('layer', async ({ layerKey, layerData }) => {
     try {
       cnxn.addLayer(layerKey, layerData);
-      refreshInView(cnxn);
+      await refreshInView(cnxn);
       saveAfterDelay();
     } catch (e) {
       socket.emit('boardError', {
@@ -83,7 +86,7 @@ io.on('connection', async socket => {
 
   socket.on('clearLayers', async params => {
     cnxn.clearLayers(params);
-    refreshInView(cnxn);
+    await refreshInView(cnxn);
     saveAfterDelay();
   });
 
@@ -117,21 +120,21 @@ io.on('connection', async socket => {
 
   socket.on('toggleLayer', async ({ toggle, visible }) => {
     await cnxn.toggleLayer(toggle, visible);
-    refreshInView(cnxn);
+    await refreshInView(cnxn);
     saveAfterDelay();
   });
 
-  socket.on('checkoutToVersion', ({ versionId, start, end, direction }) => {
+  socket.on('checkoutToVersion', async ({ versionId, start, end, direction }) => {
     const data = cnxn.checkoutToVersion(versionId, direction);
     if (data) {
-      socket.emit('slice', cnxn.getSlice(start, end));
+      socket.emit('slice', await cnxn.getSlice(start, end));
       saveAfterDelay();
     }
   });
 });
 
 io.on('disconnect', socket => {
-  console.log('disconnected');
+  Object.keys(connections).forEach(key => delete connections[key]);
 });
 
 http.listen(3030, () => {
