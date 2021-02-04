@@ -87,49 +87,4 @@ const applySmartColumns = R.curry((layers, boardData) => {
   }
 });
 
-// const applySmartColumns = R.curry((layers, boardData) => {
-//   if (boardData.layerToggles.smartColumns === false) return boardData;
-//   try {
-//     const columns = R.insertAll(
-//       boardData.columns.length,
-//       layers.map(layer => ({
-//         ...layer,
-//         dataType: layer.dataType ?? 'number',
-//         isSmartColumn: true,
-//       })),
-//       boardData.columns,
-//     );
-
-//     const rows = mapIndexed((row, index) => ({
-//       ...row,
-//       cells: [
-//         ...row.cells,
-//         ...R.map(layer => ({
-//           _id: uuidv4(),
-//           value: handleParsingExpression(layer.expression, index, layer, boardData),
-//         }))(layers),
-//       ],
-//     }))(boardData.rows);
-
-//     return {
-//       ...boardData,
-//       columns,
-//       rows,
-//     };
-//   } catch (e) {
-//     return {
-//       ...boardData,
-//       errors: [
-//         ...(boardData.errors ?? []),
-//         {
-//           section: 'smartColumns',
-//           message: e.message,
-//           type: e.type,
-//           target: e._id,
-//         },
-//       ],
-//     };
-//   }
-// });
-
 module.exports = applySmartColumns;
