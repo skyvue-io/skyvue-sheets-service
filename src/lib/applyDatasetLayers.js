@@ -39,11 +39,25 @@ const smartColumns = [
   };
 */
 
+const attachColumnIdToCells = boardData =>
+  R.assoc(
+    'rows',
+    boardData.rows.map(row => ({
+      ...row,
+      cells: row.cells.map((cell, index) => ({
+        ...cell,
+        columnId: boardData.columns[index]?._id,
+      })),
+    })),
+    boardData,
+  );
+
 const applyDatasetLayers = (layers, joinedData, boardData) =>
   R.pipe(
     R.assoc('errors', []),
-    applyJoins(joinedData, layers.joins), // future, joins
+    attachColumnIdToCells,
     applySmartColumns(layers.smartColumns),
+    applyJoins(joinedData, layers.joins), // future, joins
     applyFilters(layers.filters),
     applyGrouping(layers.groupings),
     applySortings(layers.sortings),

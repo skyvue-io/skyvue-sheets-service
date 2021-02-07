@@ -1,8 +1,8 @@
 const R = require('ramda');
 
 const findCellValueByCoordinates = R.curry(
-  ([x, y], boardData) =>
-    boardData.rows.find((_, index) => index === x)?.cells[y]?.value,
+  ([rowIndex, columnIndex], boardData) =>
+    boardData.rows.find((_, index) => index === rowIndex)?.cells[columnIndex]?.value,
 );
 
 module.exports = findCellValueByCoordinates;

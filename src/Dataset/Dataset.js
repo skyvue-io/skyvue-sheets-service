@@ -38,19 +38,23 @@ const s3 = new aws.S3(awsConfig);
  * }} boardData
  */
 
+// {
+//   joinType: 'left',
+//   condition: {
+//     datasetId: '601c7f25e6c34ab01dc5f726',
+//     select: ['22203267-470e-4654-92f1-22d3446c9104'],
+//     on: [
+//       {
+//         mainColumnId: '757909e0-3045-44cb-87d9-853c2595cfbc',
+//         joinedColumnId: 'd936f989-82fe-49c1-9483-2eacfe9c43bd',
+//         as: 'Owner name',
+//       },
+//     ],
+//   },
+// },
+
 const initial_layers = {
-  joins: {
-    joinType: 'full',
-    condition: {
-      datasetId: '601c7f25e6c34ab01dc5f726',
-      on: [
-        {
-          '757909e0-3045-44cb-87d9-853c2595cfbc':
-            'd936f989-82fe-49c1-9483-2eacfe9c43bd',
-        },
-      ],
-    },
-  },
+  joins: {},
   filters: [],
   groupings: {},
   smartColumns: [],
@@ -75,29 +79,38 @@ const Dataset = ({ datasetId, userId }) => {
   // The cache for compiled boardData objects for each boardId that is joined
   const joinedDatasets = {};
 
-  let counter = 0;
+  const counter = 0;
   const getCompiled = async (layers, baseState) => {
-    if (
-      counter === 0 &&
-      R.keys(layers.joins).length > 0 &&
-      !(layers.joins.condition.datasetId in joinedDatasets)
-    ) {
-      console.log('getcompiled');
-      counter += 1;
-      // counter is temporary until I tie in real prod data
-      const { joins } = layers;
-
-      const joinedDataset = await loadDataset(joins.condition.datasetId);
-      if (joinedDataset) {
-        joinedDatasets[joins.condition.datasetId] = await getCompiled(
-          joinedDataset?.layers ?? initial_layers,
-          joinedDataset,
-        );
-      }
-    }
+    const temp = 'This will be where I add the join logic back in';
+    // todo Make sure that joined datasetId !== current datasetId, otherwise it will lead to infinite loops
+    // if (
+    //   counter === 0
+    //   //  &&
+    //   // R.keys(layers.joins).length > 0 &&
+    //   // !(layers.joins.condition.datasetId in joinedDatasets)
+    // ) {
+    //   counter += 1;
+    //   // counter is temporary until I tie in real prod data
+    //   const { joins } = initial_layers;
+    //   console.log('hello');
+    //   const joinedDataset = await loadDataset(joins.condition.datasetId);
+    //   if (joinedDataset) {
+    //     joinedDatasets[joins.condition.datasetId] = await getCompiled(
+    //       joinedDataset?.layers ?? initial_layers,
+    //       joinedDataset,
+    //     );
+    //   }
+    // }
 
     return baseState // && !R.whereEq(layers)(initial_layers)
-      ? applyDatasetLayers(layers, joinedDatasets, baseState)
+      ? applyDatasetLayers(
+          {
+            ...layers,
+            joins: initial_layers.joins,
+          },
+          joinedDatasets,
+          baseState,
+        )
       : baseState;
   };
 

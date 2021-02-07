@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const findMax = require('../../utils/findMax');
 const findMin = require('../../utils/findMin');
 const findRowsWithValues = require('../queries/findRowsWithValues');
+const getColumnValues = require('../getColumnValuesById');
 
 const aggFuncMap = {
   sum: R.reduce((a, b) => parseFloat(a) + parseFloat(b), 0),
@@ -18,12 +19,6 @@ const aggFuncMap = {
     return Math.sqrt(array.map(x => (x - mean) ** 2).reduce((a, b) => a + b) / n);
   },
 };
-
-const getColumnValues = (colId, boardData) =>
-  R.pipe(
-    R.pluck('cells'),
-    R.map(row => row[boardData.columns.findIndex(col => col._id === colId)].value),
-  )(boardData.rows);
 
 const groupDataset = R.curry((layer, boardData) => {
   if (!boardData.layerToggles?.groupings) return boardData;
