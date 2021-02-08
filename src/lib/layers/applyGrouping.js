@@ -23,6 +23,7 @@ const aggFuncMap = {
 const groupDataset = R.curry((layer, boardData) => {
   if (!boardData.layerToggles?.groupings) return boardData;
   if (R.length(R.keys(layer)) < 2) return boardData;
+  if (layer.groupedBy.length === 0) return boardData;
 
   const { columns } = boardData;
   const { groupedBy, columnAggregates } = layer;

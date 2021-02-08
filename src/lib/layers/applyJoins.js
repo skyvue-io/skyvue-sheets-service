@@ -1,10 +1,5 @@
 const R = require('ramda');
-
-const getColumnValues = (colId, boardData) =>
-  R.pipe(
-    R.pluck('cells'),
-    R.map(row => row[boardData.columns.findIndex(col => col._id === colId)].value),
-  )(boardData.rows);
+const getColumnValues = require('../getColumnValuesById');
 
 const findCellByCoordinates = R.curry(
   ([rowIndex, columnIndex], boardData) =>
@@ -46,7 +41,7 @@ const applyJoins = R.curry((joinedData_, layer, boardData) => {
     R.append(
       R.pipe(
         R.filter(col => R.includes(col._id, condition.select)),
-        R.map(R.pipe(R.assoc('isJoined', true), R.assoc('value', on[0].as))),
+        R.map(R.pipe(R.assoc('isJoined', true))),
       )(joinedData.columns),
     ),
     R.flatten,

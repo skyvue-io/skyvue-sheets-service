@@ -79,38 +79,23 @@ const Dataset = ({ datasetId, userId }) => {
   // The cache for compiled boardData objects for each boardId that is joined
   const joinedDatasets = {};
 
-  const counter = 0;
   const getCompiled = async (layers, baseState) => {
-    const temp = 'This will be where I add the join logic back in';
-    // todo Make sure that joined datasetId !== current datasetId, otherwise it will lead to infinite loops
-    // if (
-    //   counter === 0
-    //   //  &&
-    //   // R.keys(layers.joins).length > 0 &&
-    //   // !(layers.joins.condition.datasetId in joinedDatasets)
-    // ) {
-    //   counter += 1;
-    //   // counter is temporary until I tie in real prod data
-    //   const { joins } = initial_layers;
-    //   console.log('hello');
-    //   const joinedDataset = await loadDataset(joins.condition.datasetId);
-    //   if (joinedDataset) {
-    //     joinedDatasets[joins.condition.datasetId] = await getCompiled(
-    //       joinedDataset?.layers ?? initial_layers,
-    //       joinedDataset,
-    //     );
-    //   }
-    // }
+    if (
+      R.keys(layers.joins).length > 0 &&
+      layers.joins.condition?.datasetId !== datasetId
+    ) {
+      const joinedDataset = await loadDataset(layers.joins.condition.datasetId);
+
+      if (joinedDataset) {
+        joinedDatasets[layers.joins.condition.datasetId] = await getCompiled(
+          joinedDataset?.layers ?? initial_layers,
+          joinedDataset,
+        );
+      }
+    }
 
     return baseState // && !R.whereEq(layers)(initial_layers)
-      ? applyDatasetLayers(
-          {
-            ...layers,
-            joins: initial_layers.joins,
-          },
-          joinedDatasets,
-          baseState,
-        )
+      ? applyDatasetLayers(datasetId, layers, joinedDatasets, baseState)
       : baseState;
   };
 
@@ -138,6 +123,7 @@ const Dataset = ({ datasetId, userId }) => {
     },
     addLayer: (layerKey, layer) => {
       layers = addLayer(layerKey, layer, layers);
+      console.log(layers);
     },
     saveToHistory: change => {
       changeHistory = [...changeHistory, change];
@@ -279,4 +265,4 @@ const Dataset = ({ datasetId, userId }) => {
   };
 };
 
-module.exports = Dataset;
+module.exports = { Dataset, initial_layers };

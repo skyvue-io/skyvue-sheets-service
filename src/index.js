@@ -1,7 +1,11 @@
 const app = require('express')();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
-const Dataset = require('./Dataset');
+const R = require('ramda');
+
+const { Dataset, initial_layers } = require('./Dataset');
+const loadDataset = require('./services/loadDataset');
+const applyDatasetLayers = require('./lib/applyDatasetLayers');
 
 const connections = {};
 const idleSaveTimer = {};
@@ -61,6 +65,18 @@ io.on('connection', async socket => {
 
   socket.on('head', async () => {
     socket.emit('head', cnxn.head);
+  });
+
+  socket.on('queryBoardHeaders', async datasetId => {
+    const dataset = datasetId ? await loadDataset(datasetId) : {};
+
+    socket.emit(
+      'returnQueryBoardHeaders',
+      R.omit(
+        ['rows'],
+        applyDatasetLayers(datasetId, dataset.layers ?? initial_layers, {}, dataset),
+      ),
+    );
   });
 
   socket.on('getSlice', async ({ first, last }) => {
