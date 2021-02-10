@@ -6,6 +6,8 @@ const applySmartColumns = require('./layers/applySmartColumns');
 const applySortings = require('./layers/applySortings');
 const applyJoins = require('./layers/applyJoins');
 
+const attachColumnSummaries = require('./layers/attachColumnSummaries');
+
 const getColumnValuesById = require('./getColumnValuesById');
 
 const mapIndexed = R.addIndex(R.map);
@@ -51,6 +53,7 @@ const applyDatasetLayers = (_id, layers, joinedData, boardData) =>
     applySmartColumns(layers.smartColumns),
     applyJoins(joinedData, layers.joins),
     applyFilters(layers.filters),
+    attachColumnSummaries,
     applyGrouping(layers.groupings),
     applySortings(layers.sortings),
     updateRowIndeces,
