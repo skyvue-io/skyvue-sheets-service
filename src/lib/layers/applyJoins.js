@@ -55,8 +55,6 @@ const applyJoins = R.curry((joinedData_, layer, boardData) => {
     ),
   )(boardData.columns);
 
-  console.log(columns, joinedData.rows[0]);
-
   const findCellsFromLookup = row => {
     const joinKey = columns.find(col => col.foreignKeyId)._id;
     const joinValue = row.cells.find(cell => cell.columnId === joinKey)?.value;
@@ -65,22 +63,16 @@ const applyJoins = R.curry((joinedData_, layer, boardData) => {
     ];
   };
 
-  // console.log(boardData.rows[0].cells);
-
   return {
     ...boardData,
     columns,
     rows: boardData.rows.map((row, rowIndex) => ({
       ...row,
-      cells: columns.map((col, colIndex) => {
-        if (col.isSmartColumn) {
-          // console.log(rowIndex, colIndex);
-          // console.log(col, findCellByCoordinates([rowIndex, colIndex], boardData));
-        }
-        return col.isJoined
+      cells: columns.map((col, colIndex) =>
+        col.isJoined
           ? findCellsFromLookup(row)?.find(cell => cell.columnId === col._id)
-          : findCellByCoordinates([rowIndex, colIndex], boardData);
-      }),
+          : findCellByCoordinates([rowIndex, colIndex], boardData),
+      ),
     })),
   };
 });
