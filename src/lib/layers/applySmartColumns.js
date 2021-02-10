@@ -52,6 +52,7 @@ const applySmartColumns = R.curry((layers, boardData) => {
           ...row.cells,
           {
             _id: uuidv4(),
+            columnId: smartColumn._id,
             value: handleParsingExpression(
               smartColumn.expression,
               index,
