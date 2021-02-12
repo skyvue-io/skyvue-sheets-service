@@ -54,7 +54,7 @@ const processRow = R.curry((logicalRules, boardData, row) => {
     boardData.columns.findIndex(col => col._id === colId);
 
   const processCondition = cond =>
-    predicateMap[cond.predicateType](
+    predicateMap[cond.predicateType]?.(
       row.cells[cellValueByColumnIndex(cond.key)].value,
       cond.value,
     );
