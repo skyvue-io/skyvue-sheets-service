@@ -17,64 +17,69 @@ const applyJoins = R.curry((joinedData_, layer, boardData) => {
   )
     return boardData;
 
-  const { condition } = layer;
-  const { on } = condition;
+  try {
+    const { condition } = layer;
+    const { on } = condition;
 
-  const joinedData = joinedData_[condition.datasetId];
-  const joinedColumnsLookup = R.pipe(
-    R.reduce(
-      (acc, value) => R.assoc(value, getColumnValues(value, joinedData), acc),
-      {},
-    ),
-    R.map(
+    const joinedData = joinedData_[condition.datasetId];
+    const joinedColumnsLookup = R.pipe(
       R.reduce(
-        (acc, value) =>
-          R.assoc(value, findRowByCellValue(value, joinedData)?.cells ?? [], acc),
+        (acc, value) => R.assoc(value, getColumnValues(value, joinedData), acc),
         {},
       ),
-    ),
-  )(R.map(R.prop('joinedColumnId'), on));
-
-  const mapPrimaryToForeignKey = R.indexBy(R.prop('mainColumnId'))(on);
-
-  const columns = R.pipe(
-    R.append(
-      R.pipe(
-        R.filter(col => R.includes(col._id, condition.select)),
-        R.map(R.pipe(R.assoc('isJoined', true))),
-      )(joinedData.columns),
-    ),
-    R.flatten,
-    R.map(col =>
-      on.find(cond => cond.mainColumnId === col._id)
-        ? R.assoc(
-            'foreignKeyId',
-            on.find(cond => cond.mainColumnId === col._id)?.joinedColumnId,
-          )(col)
-        : col,
-    ),
-  )(boardData.columns);
-
-  const findCellsFromLookup = row => {
-    const joinKey = columns.find(col => col.foreignKeyId)._id;
-    const joinValue = row.cells.find(cell => cell.columnId === joinKey)?.value;
-    return joinedColumnsLookup[mapPrimaryToForeignKey[joinKey]?.joinedColumnId][
-      joinValue
-    ];
-  };
-
-  return {
-    ...boardData,
-    columns,
-    rows: boardData.rows.map((row, rowIndex) => ({
-      ...row,
-      cells: columns.map((col, colIndex) =>
-        col.isJoined
-          ? findCellsFromLookup(row)?.find(cell => cell.columnId === col._id)
-          : findCellByCoordinates([rowIndex, colIndex], boardData),
+      R.map(
+        R.reduce(
+          (acc, value) =>
+            R.assoc(value, findRowByCellValue(value, joinedData)?.cells ?? [], acc),
+          {},
+        ),
       ),
-    })),
-  };
+    )(R.map(R.prop('joinedColumnId'), on));
+
+    const mapPrimaryToForeignKey = R.indexBy(R.prop('mainColumnId'))(on);
+
+    const columns = R.pipe(
+      R.append(
+        R.pipe(
+          R.filter(col => R.includes(col._id, condition.select)),
+          R.map(R.pipe(R.assoc('isJoined', true))),
+        )(joinedData.columns),
+      ),
+      R.flatten,
+      R.map(col =>
+        on.find(cond => cond.mainColumnId === col._id)
+          ? R.assoc(
+              'foreignKeyId',
+              on.find(cond => cond.mainColumnId === col._id)?.joinedColumnId,
+            )(col)
+          : col,
+      ),
+    )(boardData.columns);
+
+    const findCellsFromLookup = row => {
+      const joinKey = columns.find(col => col.foreignKeyId)._id;
+      const joinValue = row.cells.find(cell => cell.columnId === joinKey)?.value;
+      return joinedColumnsLookup[mapPrimaryToForeignKey[joinKey]?.joinedColumnId][
+        joinValue
+      ];
+    };
+
+    return {
+      ...boardData,
+      columns,
+      rows: boardData.rows.map((row, rowIndex) => ({
+        ...row,
+        cells: columns.map((col, colIndex) =>
+          col.isJoined
+            ? findCellsFromLookup(row)?.find(cell => cell.columnId === col._id)
+            : findCellByCoordinates([rowIndex, colIndex], boardData),
+        ),
+      })),
+    };
+  } catch (e) {
+    console.log(e);
+    return boardData;
+  }
 });
 
 module.exports = applyJoins;

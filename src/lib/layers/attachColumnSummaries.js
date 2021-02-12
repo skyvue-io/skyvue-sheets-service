@@ -7,12 +7,17 @@ const attachColumnSummaries = R.curry(boardData => {
   const columnLookup = R.pipe(
     R.pluck('_id'),
     R.reduce(
-      (acc, value) => R.assoc(value, getColumnValues(value, boardData), acc),
+      (acc, value) =>
+        R.tryCatch(
+          R.assoc(value, getColumnValues(value, boardData)),
+          R.assoc(value, []),
+        )(acc),
       {},
     ),
   )(columns);
 
-  const handleCalculation = (...func) => R.pipe(R.map(safeParseNumber), ...func);
+  const handleCalculation = (...func) =>
+    R.tryCatch(R.pipe(R.map(safeParseNumber), ...func), param => undefined);
 
   const summary = R.map(colId => {
     const values = columnLookup[colId];

@@ -1,4 +1,14 @@
 const R = require('ramda');
+const {
+  isSameDay,
+  isSameWeek,
+  isSameMonth,
+  isSameYear,
+  isEqual,
+  isBefore,
+  isAfter,
+  differenceInDays,
+} = require('date-fns');
 
 const predicateMap = {
   // eslint-disable-next-line eqeqeq
@@ -10,6 +20,23 @@ const predicateMap = {
   lessThanEqualTo: (a, b) => a <= b,
   greaterThan: (a, b) => a > b,
   greaterThanEqualTo: (a, b) => a >= b,
+
+  sameDay: (a, b) => isSameDay(new Date(a), new Date(b)),
+  sameWeek: (a, b) => isSameWeek(new Date(a), new Date(b)),
+  sameMonth: (a, b) => isSameMonth(new Date(a), new Date(b)),
+  sameYear: (a, b) => isSameYear(new Date(a), new Date(b)),
+  equals_date: (a, b) => isEqual(new Date(a), new Date(b)),
+  notEquals_date: (a, b) => !isEqual(new Date(a), new Date(b)),
+  lessThan_date: (a, b) =>
+    differenceInDays(new Date(a), new Date(b)) < 0 ||
+    isBefore(new Date(a), new Date(b)),
+  lessThanEqualTo_date: (a, b) =>
+    isBefore(new Date(a), new Date(b)) || isSameDay(new Date(a), new Date(b)),
+  greaterThan_date: (a, b) =>
+    differenceInDays(new Date(a), new Date(b)) > 0 &&
+    isAfter(new Date(a), new Date(b)),
+  greaterThanEqualTo_date: (a, b) =>
+    isAfter(new Date(a), new Date(b)) || isSameDay(new Date(a), new Date(b)),
   dateBetween: R.__,
 };
 
