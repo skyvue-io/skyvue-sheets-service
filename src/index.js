@@ -3,6 +3,22 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const R = require('ramda');
 
+const Sentry = require('@sentry/node');
+const Tracing = require('@sentry/tracing');
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+
+  // We recommend adjusting this value in production, or using tracesSampler
+  // for finer control
+  tracesSampleRate: 1.0,
+});
+
+Sentry.startTransaction({
+  op: 'idk',
+  name: "Not sure what I'm doing",
+});
+
 const { Dataset, initial_layers } = require('./Dataset');
 const loadDataset = require('./services/loadDataset');
 const applyDatasetLayers = require('./lib/applyDatasetLayers');

@@ -20,6 +20,8 @@
   "homepage": "https://github.com/skyvue-io/skyvue-sheets-service#readme",
   "dependencies": {
     "@formulajs/formulajs": "^2.6.2",
+    "@sentry/node": "^6.2.0",
+    "@sentry/tracing": "^6.2.0",
     "aws-sdk": "^2.784.0",
     "date-fns": "^2.17.0",
     "dotenv": "^8.2.0",
