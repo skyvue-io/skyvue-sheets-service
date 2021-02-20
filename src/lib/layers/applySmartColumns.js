@@ -26,7 +26,7 @@ const handleParsingExpression = (expression, rowIndex, col, boardData) => {
     const filledVariables = replaceExpWithValues(expression, rowIndex, boardData);
     return evaluateExpression(filledVariables);
   } catch (e) {
-    console.log(e);
+    console.log('handleParsingExpression', e);
     throw new SyntaxError(col._id);
   }
 };

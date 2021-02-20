@@ -39,7 +39,12 @@ const predicateMap = {
     isAfter(new Date(a), new Date(b)),
   greaterThanEqualTo_date: (a, b) =>
     isAfter(new Date(a), new Date(b)) || isSameDay(new Date(a), new Date(b)),
-  dateBetween: R.__,
+  dateBetween: (a, b) => {
+    const [start, end] = b.split(',');
+    return (
+      isAfter(new Date(a), new Date(start)) && isBefore(new Date(a), new Date(end))
+    );
+  },
 };
 
 const processRow = R.curry((logicalRules, boardData, row) => {
@@ -57,7 +62,7 @@ const processRow = R.curry((logicalRules, boardData, row) => {
 
   const processCondition = cond =>
     predicateMap[cond.predicateType]?.(
-      row.cells[cellValueByColumnIndex(cond.key)].value,
+      row.cells[cellValueByColumnIndex(cond.key)]?.value,
       cond.value,
     );
 

@@ -1,3 +1,5 @@
+const dateFn = require('date-fns');
+
 const {
   DATE,
   DATEVALUE,
@@ -286,6 +288,26 @@ const {
   UNICODE,
   UPPER,
 } = require('@formulajs/formulajs');
+
+const DATEDIF = (start_, end_, unit) => {
+  try {
+    const start = new Date(start_);
+    const end = new Date(end_);
+    switch (unit.toLowerCase()) {
+      case 'y':
+        return dateFn.differenceInYears(start, end);
+      case 'm':
+        return dateFn.differenceInMonths(start, end);
+      case 'd':
+        return dateFn.differenceInDays(start, end);
+      default:
+        return start;
+    }
+  } catch (e) {
+    console.log(e);
+    return start;
+  }
+};
 
 // eslint-disable-next-line no-eval
 module.exports = expression => eval(expression);
