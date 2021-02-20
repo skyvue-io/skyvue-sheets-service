@@ -122,6 +122,11 @@ io.on('connection', async socket => {
     saveAfterDelay();
   });
 
+  socket.on('syncLayers', async layers => {
+    cnxn.syncLayers(layers);
+    saveAfterDelay();
+  });
+
   socket.on('diff', async data => {
     await cnxn.addDiff(data);
     saveAfterDelay();

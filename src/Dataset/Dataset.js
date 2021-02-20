@@ -123,7 +123,10 @@ const Dataset = ({ datasetId, userId }) => {
     },
     addLayer: (layerKey, layer) => {
       layers = addLayer(layerKey, layer, layers);
-      console.log(layers);
+    },
+    syncLayers: newLayers => {
+      if (R.equals(layers, newLayers)) return;
+      layers = newLayers;
     },
     saveToHistory: change => {
       changeHistory = [...changeHistory, change];
