@@ -5,6 +5,7 @@ const env = require('../env');
 const applyDatasetLayers = require('../lib/applyDatasetLayers');
 const boardDataToCSVReadableJSON = require('../lib/boardDataToCSVReadableJSON');
 const jsonToCSV = require('../lib/jsonToCSV');
+const { formatValueFromBoardData } = require('../lib/formatValue');
 const makeBoardDataFromVersion = require('../lib/makeBoardDataFromVersion');
 const loadDataset = require('../services/loadDataset');
 
@@ -196,8 +197,19 @@ const Dataset = ({ datasetId, userId }) => {
     exportToCSV: async (title, quantity) => {
       if (!baseState) return;
       const compiled = await getCompiled(layers, baseState);
-      const documents = R.pipe(boardDataToCSVReadableJSON, x =>
-        R.splitEvery(x.length / quantity, x),
+      const documents = R.pipe(
+        R.assoc(
+          'rows',
+          R.map(row => ({
+            ...row,
+            cells: row.cells.map(cell => ({
+              ...cell,
+              value: formatValueFromBoardData(cell.columnId, cell.value, compiled),
+            })),
+          }))(compiled.rows),
+        ),
+        boardDataToCSVReadableJSON,
+        x => R.splitEvery(x.length / quantity, x),
       )(compiled);
 
       const objectUrls = await Promise.all(
