@@ -11,6 +11,8 @@ const {
 } = require('date-fns');
 
 const predicateMap = {
+  notNull: (a, b) => a !== '' && a !== undefined && a !== null,
+  null: (a, b) => a === '' || a === undefined || a === null,
   // eslint-disable-next-line eqeqeq
   equals: (a, b) => a == b,
   // eslint-disable-next-line eqeqeq

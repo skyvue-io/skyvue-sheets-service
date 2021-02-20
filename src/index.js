@@ -6,8 +6,6 @@ const R = require('ramda');
 const Sentry = require('@sentry/node');
 const Tracing = require('@sentry/tracing');
 
-console.log('dummy');
-
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
 
