@@ -140,7 +140,7 @@ const Dataset = ({ datasetId, userId }) => {
       baseState = {
         ...baseState,
         layerToggles: {
-          ...baseState.layerToggles,
+          ...baseState?.layerToggles,
           [toggle]: visible,
         },
       };

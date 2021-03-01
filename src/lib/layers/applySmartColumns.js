@@ -2,7 +2,7 @@ const R = require('ramda');
 const { v4: uuidv4 } = require('uuid');
 const findCellValueByCoordinates = require('../findCellValueByCoordinates');
 const findColumnIndexById = require('../findColumnIndexById');
-const SyntaxError = require('../../errors/SyntaxError');
+// const SyntaxError = require('../../errors/SyntaxError');
 const evaluateExpression = require('../evaluateExpression');
 
 const UUID_REGEX = /\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b/g;
@@ -22,13 +22,8 @@ const replaceExpWithValues = (expression, rowIndex, boardData) =>
   )(expression);
 
 const handleParsingExpression = (expression, rowIndex, col, boardData) => {
-  try {
-    const filledVariables = replaceExpWithValues(expression, rowIndex, boardData);
-    return evaluateExpression(filledVariables);
-  } catch (e) {
-    console.log('handleParsingExpression', e);
-    throw new SyntaxError(col._id);
-  }
+  const filledVariables = replaceExpWithValues(expression, rowIndex, boardData);
+  return evaluateExpression(filledVariables);
 };
 
 const mapIndexed = R.addIndex(R.map);

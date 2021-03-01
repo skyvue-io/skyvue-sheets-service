@@ -293,7 +293,7 @@ const DATEDIF = (start_, end_, unit) => {
   try {
     const start = new Date(start_);
     const end = new Date(end_);
-    switch (unit.toLowerCase()) {
+    switch (unit?.toLowerCase()) {
       case 'y':
         return dateFn.differenceInYears(start, end);
       case 'm':

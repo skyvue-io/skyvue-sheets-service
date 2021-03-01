@@ -12,7 +12,10 @@ const {
 
 const predicateMap = {
   notNull: (a, b) => a !== '' && a !== undefined && a !== null,
-  null: (a, b) => a === '' || a === undefined || a === null,
+  null: (a, b) => {
+    console.log(a);
+    return a === '' || a === undefined || a === null;
+  },
   // eslint-disable-next-line eqeqeq
   equals: (a, b) => a == b,
   // eslint-disable-next-line eqeqeq
@@ -42,7 +45,9 @@ const predicateMap = {
   dateBetween: (a, b) => {
     const [start, end] = b.split(',');
     return (
-      isAfter(new Date(a), new Date(start)) && isBefore(new Date(a), new Date(end))
+      a &&
+      isAfter(new Date(a), new Date(start)) &&
+      isBefore(new Date(a), new Date(end))
     );
   },
 };
@@ -56,7 +61,6 @@ const processRow = R.curry((logicalRules, boardData, row) => {
     .filter(rule => !Array.isArray(rule));
 
   const nestedConditions = logicalRules.find(rule => Array.isArray(rule));
-
   const cellValueByColumnIndex = colId =>
     boardData.columns.findIndex(col => col._id === colId);
 
