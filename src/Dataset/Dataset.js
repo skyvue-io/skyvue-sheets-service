@@ -216,7 +216,13 @@ const Dataset = ({ datasetId, userId }) => {
       const objectUrls = await Promise.all(
         documents.map(async (doc, index) => {
           const fileName = `${datasetId}-${index}`;
-          await s3
+          const exportsConfig = new aws.Config({
+            region: 'us-west-1',
+            accessKeyId: env.AWS_ACCESS_KEY,
+            secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+          });
+          const exportsS3 = new aws.S3(exportsConfig);
+          await exportsS3
             .putObject({
               Bucket: 'skyvue-exported-datasets',
               Key: fileName,
