@@ -232,7 +232,9 @@ const Dataset = ({ datasetId, userId }) => {
             })
             .promise();
 
-          return `http://skyvue-exported-datasets.s3.amazonaws.com/${fileName}`;
+          return env.NODE_ENV === 'production'
+            ? `https://skyvue-exported-datasets.s3.amazonaws.com/${fileName}`
+            : `http://skyvue-exported-datasets.s3.amazonaws.com/${fileName}`;
         }),
       );
 
