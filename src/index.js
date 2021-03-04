@@ -96,10 +96,10 @@ io.on('connection', async socket => {
   });
 
   socket.on('getSlice', async ({ first, last }) => {
-    cnxn.setSliceQueue(first, last ?? first + DEFAULT_SLICE_END);
-    if (cnxn.sliceQueue?.[0] === first) return;
+    if (cnxn.lastSlice?.[0] === first) return;
+    cnxn.setLastSlice(first, last ?? first + DEFAULT_SLICE_END);
+    console.log(cnxn.lastSlice, first, last);
     const response = await cnxn.getSlice(first, last ?? first + DEFAULT_SLICE_END);
-    cnxn.clearSliceQueue();
     socket.emit('slice', response);
   });
 

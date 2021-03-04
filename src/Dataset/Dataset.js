@@ -74,7 +74,7 @@ const Dataset = ({ datasetId, userId }) => {
   let head;
   let baseState;
   let fnQueue;
-  let sliceQueue;
+  let lastSlice;
   let layers = initial_layers;
   let changeHistory = [];
   // The archive for removed columns
@@ -157,14 +157,12 @@ const Dataset = ({ datasetId, userId }) => {
     clearFuncQueue: () => {
       fnQueue = undefined;
     },
-    setSliceQueue: (start, end) => {
-      sliceQueue = [start, end];
+    setLastSlice: (start, end) => {
+      lastSlice = [start, end];
+      console.log(lastSlice);
     },
-    get sliceQueue() {
-      return sliceQueue;
-    },
-    clearSliceQueue: () => {
-      sliceQueue = undefined;
+    get lastSlice() {
+      return lastSlice;
     },
     load: async () => {
       console.log('attempting to load...', s3Params);
