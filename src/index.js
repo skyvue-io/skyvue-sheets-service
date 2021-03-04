@@ -26,7 +26,7 @@ const applyDatasetLayers = require('./lib/applyDatasetLayers');
 const connections = {};
 const idleSaveTimer = {};
 const DEFAULT_SLICE_START = 0;
-const DEFAULT_SLICE_END = 100;
+const DEFAULT_SLICE_END = 200;
 
 app.get('/', (req, res) => {
   res.send(`Datasets service is alive!`);
