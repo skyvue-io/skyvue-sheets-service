@@ -3,6 +3,7 @@ const R = require('ramda');
 const safeParseNumber = require('../../utils/safeParseNumber');
 
 const applySortings = R.curry((sortLayer, boardData) => {
+  if (sortLayer.length === 0) return boardData;
   const indecesOfSortKeys = sortLayer.map(sorting =>
     boardData.columns.findIndex(col => col._id === sorting.key),
   );

@@ -96,6 +96,7 @@ io.on('connection', async socket => {
   });
 
   socket.on('getSlice', async ({ first, last }) => {
+    console.log(first, last ?? first + DEFAULT_SLICE_END);
     socket.emit(
       'slice',
       await cnxn.getSlice(first, last ?? first + DEFAULT_SLICE_END),

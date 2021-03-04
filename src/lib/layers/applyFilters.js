@@ -53,8 +53,6 @@ const predicateMap = {
 };
 
 const processRow = R.curry((logicalRules, boardData, row) => {
-  if (logicalRules.length === 1) return boardData;
-  if (!boardData.layerToggles?.filters) return boardData;
   const topLevelOperator = logicalRules[0];
   const topLevelConditions = logicalRules
     .slice(1, logicalRules.length)
@@ -85,12 +83,17 @@ const processRow = R.curry((logicalRules, boardData, row) => {
   }
 });
 
-const applyFilters = R.curry((logicalRules, boardData) => ({
-  ...boardData,
-  rows:
-    logicalRules.length > 0
-      ? R.filter(processRow(logicalRules, boardData))(boardData.rows)
-      : boardData.rows,
-}));
+const applyFilters = R.curry((logicalRules, boardData) => {
+  if (!boardData.layerToggles?.filters) return boardData;
+  if (logicalRules.length === 1) return boardData;
+
+  return {
+    ...boardData,
+    rows:
+      logicalRules.length > 0
+        ? R.filter(processRow(logicalRules, boardData))(boardData.rows)
+        : boardData.rows,
+  };
+});
 
 module.exports = applyFilters;
