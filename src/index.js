@@ -96,11 +96,11 @@ io.on('connection', async socket => {
   });
 
   socket.on('getSlice', async ({ first, last }) => {
-    console.log(first, last ?? first + DEFAULT_SLICE_END);
-    socket.emit(
-      'slice',
-      await cnxn.getSlice(first, last ?? first + DEFAULT_SLICE_END),
-    );
+    cnxn.setSliceQueue(first, last ?? first + DEFAULT_SLICE_END);
+    if (cnxn.sliceQueue?.[0] === first) return;
+    const response = await cnxn.getSlice(first, last ?? first + DEFAULT_SLICE_END);
+    cnxn.clearSliceQueue();
+    socket.emit('slice', response);
   });
 
   socket.on('layer', async ({ layerKey, layerData }) => {
