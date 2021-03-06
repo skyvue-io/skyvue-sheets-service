@@ -40,7 +40,7 @@ const attachIsUnique = boardData =>
         new Set(getColumnValuesById(col._id, boardData)).size ===
           boardData.rows.length,
       )(col),
-    )(boardData.columns),
+    )(boardData?.columns ?? []),
     boardData,
   );
 

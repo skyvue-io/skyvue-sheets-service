@@ -95,11 +95,14 @@ io.on('connection', async socket => {
     );
   });
 
+  // Only use this route to return a slice from the cached dataset (e.g. on a scroll event).
+  // Don't call it expecting any changes to the compilation.
   socket.on('getSlice', async ({ first, last }) => {
     if (cnxn.lastSlice?.[0] === first) return;
     cnxn.setLastSlice(first, last ?? first + DEFAULT_SLICE_END);
-    console.log(cnxn.lastSlice, first, last);
-    const response = await cnxn.getSlice(first, last ?? first + DEFAULT_SLICE_END);
+    const response = await cnxn.getSlice(first, last ?? first + DEFAULT_SLICE_END, {
+      useCached: true,
+    });
     socket.emit('slice', response);
   });
 

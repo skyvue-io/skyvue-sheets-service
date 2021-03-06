@@ -76,13 +76,14 @@ const Dataset = ({ datasetId, userId }) => {
   let fnQueue;
   let lastSlice;
   let layers = initial_layers;
+  let lastCompiledVersion;
   let changeHistory = [];
   // The archive for removed columns
   const removedColumns = {};
   // The cache for compiled boardData objects for each boardId that is joined
   const joinedDatasets = {};
 
-  const getCompiled = async (layers, baseState) => {
+  const getCompiled = async (layers, baseState, { saveCompilation = true } = {}) => {
     if (
       R.keys(layers.joins).length > 0 &&
       layers.joins.condition?.datasetId !== datasetId
@@ -90,16 +91,28 @@ const Dataset = ({ datasetId, userId }) => {
       const joinedDataset = await loadDataset(layers.joins.condition.datasetId);
 
       if (joinedDataset) {
-        joinedDatasets[layers.joins.condition.datasetId] = await getCompiled(
+        joinedDatasets[
+          layers.joins.condition.datasetId
+        ] = await getCompiled(
           joinedDataset?.layers ?? initial_layers,
           joinedDataset,
+          { saveCompilation: false },
         );
       }
     }
 
-    return baseState // && !R.whereEq(layers)(initial_layers)
-      ? applyDatasetLayers(datasetId, layers, joinedDatasets, baseState)
-      : baseState;
+    const compiled = applyDatasetLayers(
+      datasetId,
+      layers,
+      joinedDatasets,
+      baseState,
+    );
+
+    if (saveCompilation) {
+      lastCompiledVersion = compiled;
+    }
+
+    return compiled;
   };
 
   return {
@@ -178,15 +191,23 @@ const Dataset = ({ datasetId, userId }) => {
 
       return baseState;
     },
-    getSlice: async (start, end) => {
+    getSlice: async (start, end, { useCached = false } = {}) => {
+      if (useCached && lastCompiledVersion) {
+        return {
+          ...lastCompiledVersion,
+          layers,
+          rows: lastCompiledVersion.rows?.slice(start, end + 1) ?? [],
+        };
+      }
+
       const compiled = await getCompiled(layers, baseState);
 
       return {
         ...compiled,
         layers,
-        rows:
-          compiled?.rows?.filter(row => row.index >= start && row.index <= end) ??
-          [],
+        rows: compiled?.rows?.slice(start, end + 1) ?? [],
+        // compiled?.rows?.filter(row => row.index >= start && row.index <= end) ??
+        // [],
       };
     },
     addDiff: async diff => {
