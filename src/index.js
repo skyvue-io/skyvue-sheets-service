@@ -27,6 +27,10 @@ const connections = {};
 const idleSaveTimer = {};
 const DEFAULT_SLICE_START = 0;
 const DEFAULT_SLICE_END = 200;
+const ORIGIN_ALLOW_LIST =
+  process.env.NODE_ENV === 'development'
+    ? ['http://localhost:3000']
+    : ['https://app.skyvue.io'];
 
 app.get('/', (req, res) => {
   res.send(`Datasets service is alive!`);
@@ -35,7 +39,11 @@ app.get('/', (req, res) => {
 io.on('connection', async socket => {
   const { datasetId, userId } = socket.handshake.query;
 
-  if (datasetId && userId) {
+  if (
+    datasetId &&
+    userId &&
+    ORIGIN_ALLOW_LIST.includes(socket.handshake?.headers?.origin)
+  ) {
     socket.join(datasetId);
     if (!connections[datasetId]) {
       connections[datasetId] = Dataset({
