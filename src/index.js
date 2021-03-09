@@ -111,7 +111,7 @@ io.on('connection', async socket => {
     const response = await cnxn.getSlice(first, last ?? first + DEFAULT_SLICE_END, {
       useCached: true,
     });
-    socket.emit('slice', response);
+    socket.emit('appendRows', response.rows);
   });
 
   socket.on('layer', async ({ layerKey, layerData }) => {
