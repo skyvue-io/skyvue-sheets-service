@@ -67,7 +67,7 @@ io.on('connection', async socket => {
   const refreshInView = async cnxn => {
     try {
       const slice = await cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
-      socket.emit('slice', slice);
+      socket.emit('setBoardData', slice);
       socket.emit('csvEstimate', await cnxn.estCSVSize());
       socket.emit('meta', cnxn.meta);
     } catch (e) {
@@ -176,7 +176,7 @@ io.on('connection', async socket => {
   socket.on('checkoutToVersion', async ({ versionId, start, end, direction }) => {
     const data = cnxn.checkoutToVersion(versionId, direction);
     if (data) {
-      socket.emit('slice', await cnxn.getSlice(start, end));
+      socket.emit('setBoardData', await cnxn.getSlice(start, end));
       saveAfterDelay();
     }
   });

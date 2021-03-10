@@ -10,6 +10,8 @@ const {
   differenceInDays,
 } = require('date-fns');
 
+const safeParseNumber = require('../../utils/safeParseNumber');
+
 const predicateMap = {
   notNull: (a, b) => a !== '' && a !== undefined && a !== null,
   null: (a, b) => {
@@ -64,8 +66,8 @@ const processRow = R.curry((logicalRules, boardData, row) => {
 
   const processCondition = cond =>
     predicateMap[cond.predicateType]?.(
-      row.cells[cellValueByColumnIndex(cond.key)]?.value,
-      cond.value,
+      safeParseNumber(row.cells[cellValueByColumnIndex(cond.key)]?.value),
+      safeParseNumber(cond.value),
     );
 
   if (topLevelConditions.length > 0) {

@@ -1,4 +1,5 @@
 const safeParseNumber = input => {
+  if (!input) return input;
   try {
     if (input.toString().match(/^-?\d+$/)) {
       return parseInt(input, 10);
