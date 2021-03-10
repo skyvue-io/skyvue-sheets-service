@@ -5,6 +5,8 @@ const findColumnIndexById = require('../findColumnIndexById');
 // const SyntaxError = require('../../errors/SyntaxError');
 const evaluateExpression = require('../evaluateExpression');
 
+const SyntaxError = require('../../errors/SyntaxError');
+
 const UUID_REGEX = /\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b/g;
 // const SPLIT_ON_COMMAS_WITH_WHITESPACE = /,\s*/;
 // const EXTRACT_FROM_PARENS_REGEX = /\(([^)]+)\)/;
@@ -22,8 +24,12 @@ const replaceExpWithValues = (expression, rowIndex, boardData) =>
   )(expression);
 
 const handleParsingExpression = (expression, rowIndex, col, boardData) => {
-  const filledVariables = replaceExpWithValues(expression, rowIndex, boardData);
-  return evaluateExpression(filledVariables);
+  try {
+    const filledVariables = replaceExpWithValues(expression, rowIndex, boardData);
+    return evaluateExpression(filledVariables);
+  } catch (e) {
+    throw new SyntaxError(col._id, e.message);
+  }
 };
 
 const mapIndexed = R.addIndex(R.map);
@@ -66,7 +72,7 @@ const applySmartColumns = R.curry((layers, boardData) => {
 
     return incrementallyAddSmartColumns(boardData);
   } catch (e) {
-    console.log('applySmartColumns:', e);
+    console.log('applySmartColumns error:', e);
     return {
       ...boardData,
       errors: [

@@ -289,6 +289,8 @@ const {
   UPPER,
 } = require('@formulajs/formulajs');
 
+const safeEval = require('safe-eval');
+
 const DATEDIF = (start_, end_, unit) => {
   try {
     const start = new Date(start_);
@@ -309,5 +311,4 @@ const DATEDIF = (start_, end_, unit) => {
   }
 };
 
-// eslint-disable-next-line no-eval
-module.exports = expression => eval(expression);
+module.exports = expression => safeEval(expression);

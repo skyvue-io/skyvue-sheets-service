@@ -1,7 +1,7 @@
 class SyntaxError extends Error {
-  constructor(_id, ...params) {
+  constructor(_id, message, ...params) {
     super(...params);
-    this.message = 'Syntax Error';
+    this.message = message;
     this._id = _id;
     this.type = 'syntax_error';
   }
