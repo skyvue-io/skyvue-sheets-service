@@ -50,6 +50,7 @@ const groupDataset = R.curry((layer, boardData) => {
 
   const mapGroupedCells = R.curry((rowIndex, colId) => ({
     _id: uuidv4(),
+    columnId: colId,
     value: uniqGroupedValues[colId]
       ? uniqGroupedValues[colId][rowIndex]
       : aggFuncMap[columnAggregates[colId]](
