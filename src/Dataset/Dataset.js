@@ -196,7 +196,7 @@ const Dataset = ({ datasetId, userId }) => {
         return {
           ...lastCompiledVersion,
           layers,
-          rows: lastCompiledVersion.rows?.slice(start, end + 1) ?? [],
+          rows: lastCompiledVersion.rows?.slice(start - 1, end) ?? [],
         };
       }
 
