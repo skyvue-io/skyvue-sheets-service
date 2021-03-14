@@ -7,6 +7,7 @@ const boardDataToCSVReadableJSON = require('../lib/boardDataToCSVReadableJSON');
 const jsonToCSV = require('../lib/jsonToCSV');
 const { formatValueFromBoardData } = require('../lib/formatValue');
 const makeBoardDataFromVersion = require('../lib/makeBoardDataFromVersion');
+
 const loadDataset = require('../services/loadDataset');
 
 const addDiff = require('../utils/addDiff');
@@ -81,30 +82,29 @@ const Dataset = ({ datasetId, userId }) => {
   // The archive for removed columns
   const removedColumns = {};
   // The cache for compiled boardData objects for each boardId that is joined
-  const joinedDatasets = {};
+  const joinedDatasetCache = {};
 
   const getCompiled = async (layers, baseState, { saveCompilation = true } = {}) => {
     if (
       R.keys(layers.joins).length > 0 &&
-      layers.joins.condition?.datasetId !== datasetId
+      layers.joins.condition?.datasetId !== datasetId &&
+      layers.joins.condition.datasetId &&
+      !joinedDatasetCache[layers.joins.condition.datasetId]
     ) {
       const joinedDataset = await loadDataset(layers.joins.condition.datasetId);
-
-      if (joinedDataset) {
-        joinedDatasets[
-          layers.joins.condition.datasetId
-        ] = await getCompiled(
-          joinedDataset?.layers ?? initial_layers,
-          joinedDataset,
-          { saveCompilation: false },
-        );
-      }
+      console.log('making the join cache');
+      joinedDatasetCache[layers.joins.condition.datasetId] = applyDatasetLayers(
+        layers.joins.condition.datasetId,
+        joinedDataset?.layers ?? initial_layers,
+        {},
+        joinedDataset,
+      );
     }
 
     const compiled = applyDatasetLayers(
       datasetId,
       layers,
-      joinedDatasets,
+      joinedDatasetCache,
       baseState,
     );
 

@@ -1,5 +1,8 @@
 const R = require('ramda');
+const { v4: uuid } = require('uuid');
 const getColumnValues = require('../getColumnValuesById');
+
+const mapIndexed = R.addIndex(R.map);
 
 const findCellByCoordinates = R.curry(
   ([rowIndex, columnIndex], boardData) =>
@@ -64,20 +67,38 @@ const applyJoins = R.curry((joinedData_, layer, boardData) => {
       ];
     };
 
-    return {
-      ...boardData,
-      columns,
-      rows: boardData.rows.map((row, rowIndex) => ({
+    const makeRows = R.pipe(
+      mapIndexed((row, rowIndex) => ({
         ...row,
         cells: columns.map((col, colIndex) =>
           col.isJoined
-            ? findCellsFromLookup(row)?.find(cell => cell.columnId === col._id)
+            ? findCellsFromLookup(row)?.find(cell => cell.columnId === col._id) ?? {
+                _id: uuid(),
+                value: '',
+                columnId: col._id,
+                filterOnInnerJoin: true,
+              }
             : findCellByCoordinates([rowIndex, colIndex], boardData),
         ),
       })),
+      R.ifElse(
+        () => layer.joinType === 'inner',
+        R.filter(
+          row =>
+            row.cells.filter(cell => cell.filterOnInnerJoin !== true).length ===
+            row.cells.length,
+        ),
+        R.identity,
+      ),
+    );
+
+    return {
+      ...boardData,
+      columns,
+      rows: makeRows(boardData.rows),
     };
   } catch (e) {
-    console.log(e);
+    console.log('error in joins', e);
     return boardData;
   }
 });
