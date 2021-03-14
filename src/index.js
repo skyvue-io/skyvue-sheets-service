@@ -29,7 +29,7 @@ const DEFAULT_SLICE_START = 0;
 const DEFAULT_SLICE_END = 200;
 const ORIGIN_ALLOW_LIST =
   process.env.NODE_ENV === 'development'
-    ? ['http://localhost:3000']
+    ? ['http://localhost:3000', 'http://localhost:8888']
     : ['https://app.skyvue.io'];
 
 app.get('/', (req, res) => {
