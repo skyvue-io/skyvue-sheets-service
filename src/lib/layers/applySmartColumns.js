@@ -28,10 +28,6 @@ const replaceExpWithValues = (expression, rowIndex, boardData) =>
       return cell.value;
     }),
     R.replace(/ = /g, '==='),
-    x => {
-      console.log(x);
-      return x;
-    },
   )(expression);
 
 const handleParsingExpression = (expression, rowIndex, col, boardData) => {

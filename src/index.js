@@ -2,6 +2,7 @@ const app = require('express')();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const R = require('ramda');
+const csv = require('csvtojson');
 
 const Sentry = require('@sentry/node');
 const Tracing = require('@sentry/tracing');
@@ -151,6 +152,11 @@ io.on('connection', async socket => {
     saveAfterDelay();
   });
 
+  socket.on('datadump', async file => {
+    const csvAsJson = await csv().fromString(file.toString());
+    console.log(csvAsJson);
+  });
+
   socket.on('unload', async () => {
     clearTimeout(idleSaveTimer[datasetId]);
     cnxn.runQueuedFunc();
@@ -192,6 +198,28 @@ io.on('connection', async socket => {
 io.on('disconnect', socket => {
   Object.keys(connections).forEach(key => delete connections[key]);
 });
+
+setInterval(() => {
+  const formatMemoryUsage = data =>
+    `${Math.round((data / 1024 / 1024) * 100) / 100} MB`;
+
+  const memoryData = process.memoryUsage();
+
+  const memoryUsage = {
+    rss: `${formatMemoryUsage(
+      memoryData.rss,
+    )} -> Resident Set Size - total memory allocated for the process execution`,
+    heapTotal: `${formatMemoryUsage(
+      memoryData.heapTotal,
+    )} -> total size of the allocated heap`,
+    heapUsed: `${formatMemoryUsage(
+      memoryData.heapUsed,
+    )} -> actual memory used during the execution`,
+    external: `${formatMemoryUsage(memoryData.external)} -> V8 external memory`,
+  };
+
+  console.log(memoryUsage);
+}, 10000);
 
 http.listen(3030, () => {
   console.log('listening on *:3000');

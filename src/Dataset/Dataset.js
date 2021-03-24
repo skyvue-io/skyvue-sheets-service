@@ -131,11 +131,10 @@ const Dataset = ({ datasetId, userId }) => {
       return layers;
     },
     estCSVSize: async () => {
-      if (!baseState) return;
-      const compiled = await getCompiled(layers, baseState);
+      if (!baseState || !lastCompiledVersion) return;
       return R.pipe(boardDataToCSVReadableJSON, jsonToCSV, csv =>
         Buffer.byteLength(csv, 'uft8'),
-      )(compiled);
+      )(lastCompiledVersion);
     },
     addLayer: (layerKey, layer) => {
       layers = addLayer(layerKey, layer, layers);
