@@ -225,7 +225,7 @@ if (process.env.NODE_ENV === 'development') {
   }, 10000);
 }
 
-const port = process.env.port || 3030;
+const port = process.env.port || 8080;
 http.listen(port, () => {
   console.log(`listening on *:${port}`);
 });
