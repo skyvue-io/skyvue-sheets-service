@@ -161,6 +161,7 @@ io.on('connection', async socket => {
     clearTimeout(idleSaveTimer[datasetId]);
     cnxn.runQueuedFunc();
   });
+  console.log('are you listening?');
 
   socket.on('exportToCsv', async ({ title, quantity }) => {
     const s3Urls = await cnxn.exportToCSV(title, quantity);
