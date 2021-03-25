@@ -1,6 +1,5 @@
 const aws = require('aws-sdk');
 const R = require('ramda');
-const env = require('../env');
 
 const applyDatasetLayers = require('../lib/applyDatasetLayers');
 const boardDataToCSVReadableJSON = require('../lib/boardDataToCSVReadableJSON');
@@ -16,8 +15,8 @@ const addLayer = require('../utils/addLayer');
 const spacesEndpoint = new aws.Endpoint('nyc3.digitaloceanspaces.com');
 const awsConfig = new aws.Config({
   endpoint: spacesEndpoint,
-  accessKeyId: env.SPACES_KEY,
-  secretAccessKey: env.SPACES_SECRET,
+  accessKeyId: process.env.SPACES_KEY,
+  secretAccessKey: process.env.SPACES_SECRET,
 });
 
 const s3 = new aws.S3(awsConfig);
@@ -246,8 +245,8 @@ const Dataset = ({ datasetId, userId }) => {
           const fileName = `${datasetId}-${index}`;
           const exportsConfig = new aws.Config({
             region: 'us-west-1',
-            accessKeyId: env.AWS_ACCESS_KEY,
-            secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+            accessKeyId: process.env.AWS_ACCESS_KEY,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
           });
           const exportsS3 = new aws.S3(exportsConfig);
           await exportsS3
@@ -260,7 +259,7 @@ const Dataset = ({ datasetId, userId }) => {
             })
             .promise();
 
-          return env.NODE_ENV === 'production'
+          return process.env.NODE_ENV === 'production'
             ? `https://skyvue-exported-datasets.s3.amazonaws.com/${fileName}`
             : `http://skyvue-exported-datasets.s3.amazonaws.com/${fileName}`;
         }),
