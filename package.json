@@ -8,6 +8,7 @@
     "dev": "nodemon --exec npm start",
     "test": "test"
   },
+  "engines": { "node" : "14.16.0" },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/skyvue-io/skyvue-sheets-service.git"
