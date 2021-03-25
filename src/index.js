@@ -2,9 +2,9 @@ require('dotenv').config();
 const app = require('express')();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
-const R = require('ramda');
 const csv = require('csvtojson');
 
+const R = require('ramda');
 const Sentry = require('@sentry/node');
 const Tracing = require('@sentry/tracing');
 
