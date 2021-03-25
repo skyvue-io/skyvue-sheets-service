@@ -223,6 +223,7 @@ setInterval(() => {
   console.log(memoryUsage);
 }, 10000);
 
-http.listen(3030, () => {
-  console.log('listening on *:3000');
+const port = process.env.port || 3030;
+http.listen(port, () => {
+  console.log(`listening on *:${port}`);
 });
