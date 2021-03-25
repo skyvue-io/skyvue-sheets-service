@@ -8,7 +8,9 @@
     "dev": "nodemon --exec npm start",
     "test": "test"
   },
-  "engines": { "node" : "14.16.0" },
+  "engines": {
+    "node": "14.16.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/skyvue-io/skyvue-sheets-service.git"
@@ -31,6 +33,7 @@
     "json2csv": "^5.0.4",
     "lodash": "^4.17.20",
     "mathjs": "^9.0.0",
+    "ramda": "^0.27.1",
     "safe-eval": "^0.4.1",
     "socket.io": "^2.3.0",
     "uuid": "^8.3.1"
@@ -53,7 +56,6 @@
     "eslint-plugin-react": "^7.21.5",
     "eslint-plugin-react-hooks": "^4.0.0",
     "nodemon": "^2.0.6",
-    "prettier": "^2.0.0",
-    "ramda": "^0.27.1"
+    "prettier": "^2.0.0"
   }
 }
