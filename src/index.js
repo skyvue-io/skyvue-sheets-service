@@ -155,7 +155,8 @@ io.on('connection', async socket => {
 
   socket.on('datadump', async file => {
     const csvAsJson = await csv().fromString(file.toString());
-    console.log(csvAsJson);
+    cnxn.setLastAppend(csvAsJson);
+    socket.emit('appendPreview', [cnxn.lastAppend?.[0], R.last(cnxn.lastAppend)]);
   });
 
   socket.on('unload', async () => {

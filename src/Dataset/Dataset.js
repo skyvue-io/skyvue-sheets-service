@@ -78,6 +78,7 @@ const Dataset = ({ datasetId, userId }) => {
   let layers = initial_layers;
   let lastCompiledVersion;
   let changeHistory = [];
+  let lastAppend;
   // The archive for removed columns
   const removedColumns = {};
   // The cache for compiled boardData objects for each boardId that is joined
@@ -129,6 +130,15 @@ const Dataset = ({ datasetId, userId }) => {
     get layers() {
       return layers;
     },
+    get lastAppend() {
+      return lastAppend;
+    },
+    get lastSlice() {
+      return lastSlice;
+    },
+    setLastAppend: data => {
+      lastAppend = data;
+    },
     estCSVSize: async () => {
       if (!baseState || !lastCompiledVersion) return;
       return R.pipe(boardDataToCSVReadableJSON, jsonToCSV, csv =>
@@ -170,10 +180,6 @@ const Dataset = ({ datasetId, userId }) => {
     },
     setLastSlice: (start, end) => {
       lastSlice = [start, end];
-      console.log(lastSlice);
-    },
-    get lastSlice() {
-      return lastSlice;
     },
     load: async () => {
       console.log('attempting to load...', s3Params);
@@ -310,9 +316,6 @@ const Dataset = ({ datasetId, userId }) => {
 
       return true;
     },
-    inViewState: () => undefined,
-    csvFileSize: () => undefined,
-    setBaseState: () => undefined,
   };
 };
 
