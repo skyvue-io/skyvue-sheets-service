@@ -201,7 +201,8 @@ io.on('disconnect', socket => {
   Object.keys(connections).forEach(key => delete connections[key]);
 });
 
-if (process.env.NODE_ENV === 'development') {
+const shouldRunMonitor = false;
+if (shouldRunMonitor && process.env.NODE_ENV === 'development') {
   setInterval(() => {
     const formatMemoryUsage = data =>
       `${Math.round((data / 1024 / 1024) * 100) / 100} MB`;
