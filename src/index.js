@@ -167,7 +167,18 @@ io.on('connection', async socket => {
   socket.on('datadump', async file => {
     const csvAsJson = await csv().fromString(file.toString());
     cnxn.setLastAppend(csvAsJson);
-    socket.emit('appendPreview', [cnxn.lastAppend?.[0], R.last(cnxn.lastAppend)]);
+    socket.emit('appendPreview', {
+      meta: {
+        length: csvAsJson.length,
+      },
+      records: [cnxn.lastAppend?.[0], R.last(cnxn.lastAppend)],
+    });
+  });
+
+  socket.on('importLastAppended', async importSettings => {
+    await cnxn.importLastAppended(importSettings);
+    await refreshInView(cnxn);
+    saveAfterDelay();
   });
 
   socket.on('unload', async () => {

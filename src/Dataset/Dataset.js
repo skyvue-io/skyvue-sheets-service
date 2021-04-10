@@ -6,6 +6,7 @@ const boardDataToCSVReadableJSON = require('../lib/boardDataToCSVReadableJSON');
 const jsonToCSV = require('../lib/jsonToCSV');
 const { formatValueFromBoardData } = require('../lib/formatValue');
 const makeBoardDataFromVersion = require('../lib/makeBoardDataFromVersion');
+const importToBaseState = require('../lib/importToBaseState');
 
 const loadDataset = require('../services/loadDataset');
 
@@ -138,6 +139,25 @@ const Dataset = ({ datasetId, userId }) => {
     },
     setLastAppend: data => {
       lastAppend = data;
+    },
+    /**
+     * @param {{ columnMapping, dedupeSettings }} importSettings
+     */
+    importLastAppended: async ({ columnMapping, dedupeSettings }) => {
+      if (!lastAppend) return;
+      // save initial baseState size
+      // apply to base state
+      // save difference
+      // save import log to api server
+      const initialBaseStateLength = baseState?.rows?.length ?? 0;
+      baseState = importToBaseState({
+        columnMapping,
+        dedupeSettings,
+        importData: lastAppend,
+        baseState,
+      });
+      const importSize = (baseState?.rows?.length ?? 0) - initialBaseStateLength;
+      console.log(importSize);
     },
     estCSVSize: async () => {
       if (!baseState || !lastCompiledVersion) return;
