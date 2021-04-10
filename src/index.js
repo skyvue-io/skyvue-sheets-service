@@ -1,5 +1,8 @@
 require('dotenv').config();
-const app = require('express')();
+
+const express = require('express');
+
+const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const csv = require('csvtojson');
@@ -34,9 +37,17 @@ const ORIGIN_ALLOW_LIST =
     ? ['http://localhost:3000', 'http://localhost:8888']
     : ['https://app.skyvue.io'];
 
+app.use(express.json());
+app.use(
+  express.urlencoded({
+    extended: true,
+  }),
+);
 app.get('/', (req, res) => {
   res.send(`Datasets service is alive!`);
 });
+
+app.use('/api', require('./routes'));
 
 io.on('connection', async socket => {
   const { datasetId, userId } = socket.handshake.query;
@@ -163,7 +174,6 @@ io.on('connection', async socket => {
     clearTimeout(idleSaveTimer[datasetId]);
     cnxn.runQueuedFunc();
   });
-  console.log('are you listening?');
 
   socket.on('exportToCsv', async ({ title, quantity }) => {
     const s3Urls = await cnxn.exportToCSV(title, quantity);
