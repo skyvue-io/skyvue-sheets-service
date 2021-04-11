@@ -32,7 +32,7 @@ const importToBaseState = ({
     rows: [...baseState.rows, ...rowsToAppend],
   };
 
-  if (!dedupeSettings || Object.keys(dedupeSettings).length === 0) {
+  if (!dedupeSettings || dedupeSettings.dedupeOn.length === 0) {
     return newBaseState;
   }
 
