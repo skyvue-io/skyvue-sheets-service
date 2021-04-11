@@ -9,9 +9,11 @@ const parseBoardData = require('../../lib/parseBoardData');
 router.post('/process_dataset', async (req, res) => {
   const { body } = req;
   const { key, userId } = body;
+  console.log('i got the request', JSON.stringify(body));
   if (!key) return res.sendStatus(400);
 
   try {
+    console.log('loading from s3', key);
     const s3Res = await s3
       .getObject({
         Bucket: 'skyvue-datasets-queue',
@@ -29,6 +31,7 @@ router.post('/process_dataset', async (req, res) => {
     };
 
     try {
+      console.log('putting it back in s3');
       await s3.putObject(s3Params).promise();
       await s3
         .deleteObject({
@@ -36,6 +39,8 @@ router.post('/process_dataset', async (req, res) => {
           Key: key,
         })
         .promise();
+
+      console.log('sending back to server');
       res.sendStatus(200);
     } catch (e) {
       console.log(e);
