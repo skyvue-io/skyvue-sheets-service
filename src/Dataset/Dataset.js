@@ -9,6 +9,7 @@ const makeBoardDataFromVersion = require('../lib/makeBoardDataFromVersion');
 const importToBaseState = require('../lib/importToBaseState');
 
 const loadDataset = require('../services/loadDataset');
+const skyvueFetch = require('../services/skyvueFetch');
 
 const addDiff = require('../utils/addDiff');
 const addLayer = require('../utils/addLayer');
@@ -156,8 +157,16 @@ const Dataset = ({ datasetId, userId }) => {
         importData: lastAppend,
         baseState,
       });
-      const importSize = (baseState?.rows?.length ?? 0) - initialBaseStateLength;
-      console.log(importSize);
+      try {
+        await skyvueFetch.post('/datasets/append/log', {
+          userId,
+          datasetId,
+          beginningRowCount: initialBaseStateLength,
+          endingRowCount: baseState?.rows?.length ?? 0,
+        });
+      } catch (e) {
+        console.error(e);
+      }
     },
     estCSVSize: async () => {
       if (!baseState || !lastCompiledVersion) return;
