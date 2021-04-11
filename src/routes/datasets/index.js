@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const csv = require('csvtojson');
 
+const skyvueFetch = require('../../services/skyvueFetch');
 const s3 = require('../../services/aws');
 const parseBoardData = require('../../lib/parseBoardData');
 
@@ -14,6 +15,7 @@ router.post('/process_dataset', async (req, res) => {
 
   try {
     console.log('loading from s3', key);
+    res.sendStatus(200);
     const s3Res = await s3
       .getObject({
         Bucket: 'skyvue-datasets-queue',
@@ -31,8 +33,9 @@ router.post('/process_dataset', async (req, res) => {
     };
 
     try {
-      console.log('putting it back in s3');
+      console.log('putting back to s3');
       await s3.putObject(s3Params).promise();
+      console.log('deleting from queue');
       await s3
         .deleteObject({
           Bucket: 'skyvue-datasets-queue',
@@ -40,8 +43,8 @@ router.post('/process_dataset', async (req, res) => {
         })
         .promise();
 
-      console.log('sending back to server');
-      res.sendStatus(200);
+      console.log('notifying db that request is complete');
+      await skyvueFetch.patch(`/datasets/${key}`, { isProcessing: false });
     } catch (e) {
       console.log(e);
       res.sendStatus(400);

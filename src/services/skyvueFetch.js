@@ -7,11 +7,13 @@ const makeFetch = method => (route, body) =>
     headers: {
       'Content-Type': 'application/json',
       secret: process.env.DATASET_SERVICE_SECRET,
+      Authorization: `Bearer ${process.env.DATASET_SERVICE_SECRET}`,
     },
   });
 
 const skyvueFetch = {
   post: makeFetch('POST'),
+  patch: makeFetch('PATCH'),
 };
 
 module.exports = skyvueFetch;
