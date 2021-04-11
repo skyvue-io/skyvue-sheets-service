@@ -1,5 +1,6 @@
 const R = require('ramda');
 const { v4: uuid } = require('uuid');
+const dedupeDataset = require('./dedupeDataset');
 
 const importToBaseState = ({
   columnMapping,
@@ -31,8 +32,18 @@ const importToBaseState = ({
     rows: [...baseState.rows, ...rowsToAppend],
   };
 
-  // dedupe that shit
-  return newBaseState;
+  if (!dedupeSettings || Object.keys(dedupeSettings).length === 0) {
+    return newBaseState;
+  }
+
+  const mappedDedupeSettings = R.assoc(
+    'dedupeOn',
+    R.map(dedupeKey => columnMapping.find(R.propEq('importKey', dedupeKey))?.mapTo)(
+      dedupeSettings.dedupeOn,
+    ),
+  )(dedupeSettings);
+
+  return dedupeDataset(mappedDedupeSettings, newBaseState);
 };
 
 module.exports = importToBaseState;
