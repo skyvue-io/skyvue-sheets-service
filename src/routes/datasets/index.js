@@ -7,6 +7,8 @@ const skyvueFetch = require('../../services/skyvueFetch');
 const s3 = require('../../services/aws');
 const parseBoardData = require('../../lib/parseBoardData');
 
+const stringifyJson = require('../../utils/stringifyJson');
+
 router.post('/process_dataset', async (req, res) => {
   const { body } = req;
   const { key, userId } = body;
@@ -30,7 +32,7 @@ router.post('/process_dataset', async (req, res) => {
     const s3Params = {
       Bucket: 'skyvue-datasets',
       Key: key,
-      Body: JSON.stringify(boardData),
+      Body: await stringifyJson(boardData),
       ContentType: 'application/json',
     };
 

@@ -1,4 +1,5 @@
 const s3 = require('./aws');
+const parseJson = require('../utils/stringifyJson');
 
 const loadDataset = async datasetId => {
   try {
@@ -7,7 +8,7 @@ const loadDataset = async datasetId => {
       Key: datasetId,
     };
     const res = await s3.getObject(s3Params).promise();
-    const data = JSON.parse(res.Body.toString('utf-8'));
+    const data = await parseJson(res.Body.toString('utf-8'));
 
     return data;
   } catch (e) {

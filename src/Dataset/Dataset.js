@@ -13,6 +13,8 @@ const skyvueFetch = require('../services/skyvueFetch');
 
 const addDiff = require('../utils/addDiff');
 const addLayer = require('../utils/addLayer');
+const parseJson = require('../utils/parseJson');
+const stringifyJson = require('../utils/stringifyJson');
 
 const spacesEndpoint = new aws.Endpoint('nyc3.digitaloceanspaces.com');
 const awsConfig = new aws.Config({
@@ -215,7 +217,8 @@ const Dataset = ({ datasetId, userId }) => {
       try {
         head = await s3.headObject(s3Params).promise();
         const res = await s3.getObject(s3Params).promise();
-        const data = JSON.parse(res.Body.toString('utf-8'));
+        const data = await parseJson(res.Body.toString('utf-8'));
+
         baseState = data;
         layers = baseState.layers ?? initial_layers;
       } catch (e) {
@@ -321,7 +324,7 @@ const Dataset = ({ datasetId, userId }) => {
         .putObject({
           ...s3Params,
           ContentType: 'application/json',
-          Body: JSON.stringify({
+          Body: await stringifyJson({
             ...baseState,
             layers,
           }),
@@ -336,7 +339,7 @@ const Dataset = ({ datasetId, userId }) => {
           ...s3Params,
           ContentType: 'application/json',
           Key: newDatasetId,
-          Body: JSON.stringify({
+          Body: await stringifyJson({
             ...compiled,
             layers: initial_layers,
           }),
