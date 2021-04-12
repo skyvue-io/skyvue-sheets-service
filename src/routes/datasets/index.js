@@ -23,9 +23,8 @@ router.post('/process_dataset', async (req, res) => {
       })
       .promise();
     const csvAsJson = await csv().fromString(s3Res.Body.toString('utf8'));
-    console.log('logging csvAsJson', csvAsJson);
-    const boardData = parseBoardData(userId, csvAsJson);
 
+    const boardData = parseBoardData(userId, csvAsJson);
     console.log('logging the board data', boardData);
 
     const s3Params = {
