@@ -27,7 +27,10 @@ router.post('/process_dataset', async (req, res) => {
     const csvAsJson = await csv().fromString(s3Res.Body.toString('utf8'));
 
     const boardData = parseBoardData(userId, csvAsJson);
-    console.log('logging the board data', boardData);
+    console.log(
+      'board data is parsed',
+      boardData?.rows?.length ?? 'there was a problem',
+    );
 
     const s3Params = {
       Bucket: 'skyvue-datasets',
