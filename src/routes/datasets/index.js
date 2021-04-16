@@ -6,22 +6,19 @@ const csv = require('csvtojson');
 const pRetry = require('p-retry');
 
 const skyvueFetch = require('../../services/skyvueFetch');
+const compileDataset = require('../../services/compileDataset');
+const loadS3ToPostgres = require('../../services/loadS3ToPostgres');
 const s3 = require('../../services/aws');
 const makePostgres = require('../../services/postgres');
 const parseBoardData = require('../../lib/parseBoardData');
 
 const stringifyJson = require('../../utils/stringifyJson');
 
-router.post('/testing', async (req, res) => {
-  const s3Params = {
-    Bucket: 'skyvue-datasets',
-    Key: 'testingtesttest/0',
-    Body: await stringifyJson({ testing: true }),
-    ContentType: 'application/json',
-  };
-
-  await s3.putObject(s3Params).promise();
-  res.sendStatus(200);
+router.post('/test_load', async (req, res) => {
+  const { key } = req.body;
+  const base = await loadS3ToPostgres(key);
+  const baseState = await compileDataset(key, base.baseState);
+  res.json(baseState);
 });
 
 router.get('/test_get', async (req, res) => {

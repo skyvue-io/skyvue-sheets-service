@@ -1,12 +1,10 @@
-const R = require('ramda');
-const knex = require('knex')({
-  client: 'pg',
-});
+const mapRowsToInsertData = require('../lib/mapRowsToInsertData');
+const knex = require('../utils/knex');
+
+const createTableFromColumns = require('../lib/queries/createTableFromColumns');
 
 const s3 = require('./aws');
 const makePostgres = require('./postgres');
-
-const parseJson = require('../utils/parseJson');
 
 const Bucket = 'skyvue-datasets';
 
@@ -24,20 +22,12 @@ const loadS3ToPostgres = async datasetId => {
         Key: `${datasetId}/columns`,
       })
       .promise();
-    const columnData = await parseJson(columns.Body.toString('utf-8'));
 
-    const createTableQuery = knex.schema
-      .createTableIfNotExists(datasetId, table => {
-        table.string('rowId');
-        columnData.columns.forEach(col => {
-          table.string(col._id);
-        });
-      })
-      .toString();
+    const columnData = JSON.parse(columns.Body.toString('utf-8'));
 
-    console.log(createTableQuery);
-
-    await postgres.query(createTableQuery);
+    await postgres.query(
+      createTableFromColumns(`${datasetId}_base`, columnData.columns),
+    );
 
     const allRows = await s3
       .listObjects({
@@ -55,34 +45,24 @@ const loadS3ToPostgres = async datasetId => {
         .promise();
 
       const data = JSON.parse(part.Body.toString('utf-8'));
+      const insertQuery = knex(`${datasetId}_base`)
+        .insert(mapRowsToInsertData(columnData.columns)(data))
+        .onConflict('_id')
+        .merge()
+        .toString();
 
-      const insertData = R.pipe(
-        R.map(row => ({
-          ...row,
-          cells: row.cells.map((cell, index) => ({
-            ...cell,
-            columnId: columnData.columns[index]?._id,
-          })),
-        })),
-        R.map(row => [
-          { rowId: row._id },
-          ...row.cells.map(cell => ({ [cell.columnId]: cell.value })),
-        ]),
-        R.map(R.mergeAll),
-      )(data);
-
-      const insertQuery = knex(datasetId).insert(insertData).toString();
       await postgres.query(insertQuery);
     });
-    // const head = await s3.headObject(s3Params).promise();
-    // console.log(head);
-    // const res = await s3.getObject(s3Params).promise();
-    // const data = await parseJson(res.Body.toString('utf-8'));
 
-    // baseState = data;
-    // layers = baseState.layers ?? initial_layers;
+    return {
+      success: true,
+      baseState: columnData,
+    };
   } catch (e) {
     console.log('error loading dataset from s3', s3Params, e);
+    return {
+      success: false,
+    };
   }
 };
 

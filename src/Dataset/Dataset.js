@@ -216,24 +216,9 @@ const Dataset = ({ datasetId, userId }) => {
     load: async () => {
       console.log('attempting to load...', s3Params);
       try {
-        loadS3ToPostgres(datasetId);
-        // const allRows = await s3
-        //   .listObjects({
-        //     Bucket: 'skyvue-datasets',
-        //     Prefix: `${datasetId}/rows/`,
-        //   })
-        //   .promise();
-
-        // // allRows.Contents.forEach(item => {
-
-        // // })
-        // head = await s3.headObject(s3Params).promise();
-        // console.log(head);
-        // const res = await s3.getObject(s3Params).promise();
-        // const data = await parseJson(res.Body.toString('utf-8'));
-
-        // baseState = data;
-        // layers = baseState.layers ?? initial_layers;
+        const base = await loadS3ToPostgres(datasetId);
+        baseState = await compileDataset(datasetId, base.baseState);
+        layers = baseState.layers ?? initial_layers;
       } catch (e) {
         console.log('error loading dataset from s3', s3Params, e);
       }
