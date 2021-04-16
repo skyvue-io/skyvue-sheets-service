@@ -10,6 +10,7 @@ const importToBaseState = require('../lib/importToBaseState');
 
 const loadDataset = require('../services/loadDataset');
 const skyvueFetch = require('../services/skyvueFetch');
+const loadS3ToPostgres = require('../services/loadS3ToPostgres');
 
 const addDiff = require('../utils/addDiff');
 const addLayer = require('../utils/addLayer');
@@ -215,12 +216,24 @@ const Dataset = ({ datasetId, userId }) => {
     load: async () => {
       console.log('attempting to load...', s3Params);
       try {
-        head = await s3.headObject(s3Params).promise();
-        const res = await s3.getObject(s3Params).promise();
-        const data = await parseJson(res.Body.toString('utf-8'));
+        loadS3ToPostgres(datasetId);
+        // const allRows = await s3
+        //   .listObjects({
+        //     Bucket: 'skyvue-datasets',
+        //     Prefix: `${datasetId}/rows/`,
+        //   })
+        //   .promise();
 
-        baseState = data;
-        layers = baseState.layers ?? initial_layers;
+        // // allRows.Contents.forEach(item => {
+
+        // // })
+        // head = await s3.headObject(s3Params).promise();
+        // console.log(head);
+        // const res = await s3.getObject(s3Params).promise();
+        // const data = await parseJson(res.Body.toString('utf-8'));
+
+        // baseState = data;
+        // layers = baseState.layers ?? initial_layers;
       } catch (e) {
         console.log('error loading dataset from s3', s3Params, e);
       }
