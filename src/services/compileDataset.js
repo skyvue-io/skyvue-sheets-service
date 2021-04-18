@@ -9,6 +9,7 @@ const createTableFromColumns = require('../lib/queries/createTableFromColumns');
 const applySmartColumns = require('../lib/layers/applySmartColumns');
 const applyFilters = require('../lib/layers/applyFilters');
 const makeWorkingTableInsertQuery = require('../lib/queries/makeWorkingTableInsertQuery');
+const pgQueryToBoardData = require('../lib/pgQueryToBoardData');
 
 const initial_layers = {
   joins: {},
@@ -46,8 +47,11 @@ const compileDataset = async (datasetId, baseState) => {
     );
   }
 
-  return pg.query(
-    makeWorkingTableInsertQuery(datasetId)(smartColumnsAndFiltersApplied),
+  return pgQueryToBoardData(
+    await pg.query(
+      makeWorkingTableInsertQuery(datasetId)(smartColumnsAndFiltersApplied),
+    ),
+    boardData,
   );
 
   // const aggregateQuery = R.pipe(
