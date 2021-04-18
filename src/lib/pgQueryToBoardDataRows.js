@@ -5,7 +5,7 @@ const mapIndexed = R.addIndex(R.map);
 const sortKeysByColumn = columnIds =>
   R.sortBy(R.pipe(R.prop('id'), R.indexOf(R.__, columnIds)));
 
-const pgQueryToBoardData = (data, boardData) =>
+const pgQueryToBoardDataRows = (data, boardData) =>
   R.pipe(
     R.prop('rows'),
     mapIndexed((row, index) => ({
@@ -24,4 +24,4 @@ const pgQueryToBoardData = (data, boardData) =>
     })),
   )(data);
 
-module.exports = pgQueryToBoardData;
+module.exports = pgQueryToBoardDataRows;

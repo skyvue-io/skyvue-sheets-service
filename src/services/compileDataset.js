@@ -9,10 +9,24 @@ const createTableFromColumns = require('../lib/queries/createTableFromColumns');
 const applySmartColumns = require('../lib/layers/applySmartColumns');
 const applyFilters = require('../lib/layers/applyFilters');
 const makeWorkingTableInsertQuery = require('../lib/queries/makeWorkingTableInsertQuery');
-const pgQueryToBoardData = require('../lib/pgQueryToBoardData');
+const pgQueryToBoardDataRows = require('../lib/pgQueryToBoardDataRows');
+
+const joinLayer = {
+  joinType: 'left',
+  condition: {
+    datasetId: '607c620690fe20b871ae7083',
+    select: ['dcdb77b3-bf37-4137-b63a-56118428be03'],
+    on: [
+      {
+        mainColumnId: 'bf9a6095-1b92-4149-8404-ce20af6ecf50',
+        joinedColumnId: '52b45770-329e-423b-8575-4202969234af',
+      },
+    ],
+  },
+};
 
 const initial_layers = {
-  joins: {},
+  joins: joinLayer,
   filters: [],
   groupings: {},
   smartColumns: [],
@@ -23,13 +37,10 @@ const initial_layers = {
 const compileDataset = async (datasetId, baseState) => {
   const pg = await makePostgres();
 
-  const datasetWithJoins = await queryJoinedDataset(datasetId, baseState);
-
-  const boardData = {
+  const boardData = await queryJoinedDataset(datasetId, {
     ...baseState,
-    rows: datasetWithJoins,
     layers: baseState?.layers ?? initial_layers,
-  };
+  });
 
   const { layers } = boardData;
 
@@ -47,11 +58,15 @@ const compileDataset = async (datasetId, baseState) => {
     );
   }
 
-  return pgQueryToBoardData(
-    await pg.query(
-      makeWorkingTableInsertQuery(datasetId)(smartColumnsAndFiltersApplied),
+  return R.assoc(
+    'rows',
+    pgQueryToBoardDataRows(
+      await pg.query(
+        makeWorkingTableInsertQuery(datasetId)(smartColumnsAndFiltersApplied),
+      ),
+      boardData,
     ),
-    boardData,
+    baseState,
   );
 
   // const aggregateQuery = R.pipe(
