@@ -7,6 +7,7 @@ const queryJoinedDataset = require('./queryJoinedDataset');
 const knex = require('../utils/knex');
 const createTableFromColumns = require('../lib/queries/createTableFromColumns');
 const applySmartColumns = require('../lib/layers/applySmartColumns');
+const buildAggregateLayersQuery = require('../lib/layers/buildAggregateLayersQuery');
 const applyFilters = require('../lib/layers/applyFilters');
 const makeWorkingTableInsertQuery = require('../lib/queries/makeWorkingTableInsertQuery');
 const pgQueryToBoardDataRows = require('../lib/pgQueryToBoardDataRows');
@@ -25,12 +26,33 @@ const joinLayer = {
   },
 };
 
+const filterLayer = [
+  'AND',
+  {
+    filterId: 'adsf',
+    key: 'b5a5ab33-51e4-4001-b0e5-b19d7de27f22',
+    value: 'Roomba',
+    predicateType: 'equals',
+  },
+];
+
+const groupLayer = {
+  groupedBy: ['d0b12ecc-5385-4681-9543-70e7b15dcb0d'],
+  columnAggregates: {
+    'c491b7de-61a0-4b0e-abd0-e12f08eb36f8': 'count',
+  },
+};
+
+const sortingLayer = [
+  { key: 'b5a5ab33-51e4-4001-b0e5-b19d7de27f22', direction: 'asc' },
+];
+
 const initial_layers = {
-  joins: joinLayer,
-  filters: [],
-  groupings: {},
+  joins: joinLayer, // {}
+  filters: [], // filterLayer, // []
+  groupings: {}, // groupLayer, // {}
   smartColumns: [],
-  sortings: [],
+  sortings: sortingLayer, // []
   formatting: [],
 };
 // assumes data is already in postgres
@@ -58,7 +80,7 @@ const compileDataset = async (datasetId, baseState) => {
     );
   }
 
-  return R.assoc(
+  const workingBoardData = R.assoc(
     'rows',
     pgQueryToBoardDataRows(
       await pg.query(
@@ -66,18 +88,20 @@ const compileDataset = async (datasetId, baseState) => {
       ),
       boardData,
     ),
-    baseState,
+    boardData,
   );
 
-  // const aggregateQuery = R.pipe(
-  //   applyColSummaries,
-  //   applyGrouping,
-  //   applySorting,
-  //   applyRowIndeces,
-  // );
+  const aggregateQuery = buildAggregateLayersQuery(
+    `${datasetId}_working`,
+    workingBoardData,
+  );
 
-  // return pg.query(knex.select().table(`${datasetId}_working`).toString());
-  // return boardData;
+  console.log(aggregateQuery);
+
+  return {
+    ...workingBoardData,
+    rows: pgQueryToBoardDataRows(await pg.query(aggregateQuery), workingBoardData),
+  };
 };
 
 module.exports = compileDataset;
