@@ -1,10 +1,10 @@
 const R = require('ramda');
 
-const knex = require('../utils/knex');
 const makePostgres = require('./postgres');
 
 const queryJoinedDataset = require('./queryJoinedDataset');
 
+const knex = require('../utils/knex');
 const createTableFromColumns = require('../lib/queries/createTableFromColumns');
 const applySmartColumns = require('../lib/layers/applySmartColumns');
 const applyFilters = require('../lib/layers/applyFilters');

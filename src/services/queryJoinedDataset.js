@@ -24,7 +24,11 @@ const queryJoinedDataset = async (datasetId, baseState) => {
     return pgQueryToBoardData(res, baseState);
   }
 
-  await loadS3ToPostgres(datasetId);
+  const { joins } = baseState?.layers ?? {};
+
+  if (joins?.condition?.datasetId) {
+    await loadS3ToPostgres(joins.condition.datasetId);
+  }
   return postgres.query(makeJoinQuery(datasetId, joinLayer));
 };
 
