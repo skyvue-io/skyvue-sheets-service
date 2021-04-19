@@ -74,8 +74,12 @@ const compileDataset = async (datasetId, baseState) => {
     applyFilters(layers.filters),
   )(boardData);
 
-  if (smartColumnsAndFiltersApplied.columns.length !== boardData.columns.length) {
-    await pg.query(knex.schema.dropTable(`${datasetId}_working`));
+  if (
+    smartColumnsAndFiltersApplied.columns.filter(
+      col => col.isJoined || col.isSmartColumn,
+    ).length > 0
+  ) {
+    await pg.query(knex.schema.dropTable(`${datasetId}_working`).toString());
     await pg.query(
       createTableFromColumns(`${datasetId}_working`, boardData.columns),
     );

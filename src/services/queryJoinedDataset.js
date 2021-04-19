@@ -28,15 +28,12 @@ const applyJoinToColumns = (columns, joinedColumns, { condition }) =>
 
 // plucks data from s3
 // ensures that joined tables are in postgres prior to returning joined response
-const skip = true;
 const queryJoinedDataset = async (datasetId, baseState) => {
   const postgres = await makePostgres();
   const { joins } = baseState?.layers ?? {};
 
   if (
-    skip ||
     !baseState.layerToggles.joins ||
-    !joins ||
     !joins?.condition?.datasetId ||
     Object.keys(joins ?? {}).length === 0
   ) {
