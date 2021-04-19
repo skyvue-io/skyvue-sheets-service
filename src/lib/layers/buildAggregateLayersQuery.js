@@ -54,7 +54,9 @@ const buildAggregateLayersQuery = R.curry((tableName, boardData) => {
 
   const attachSortingToQuery = query => {
     if (!sortings?.length) return query.clone();
-    sortings.forEach(({ key, direction }) => query.orderBy(key, direction));
+    sortings
+      .filter(sorting => groupedBy.includes(sorting.key))
+      .forEach(({ key, direction }) => query.orderBy(key, direction));
     return query.clone();
   };
 

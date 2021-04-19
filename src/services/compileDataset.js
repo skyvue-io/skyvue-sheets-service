@@ -11,6 +11,7 @@ const buildAggregateLayersQuery = require('../lib/layers/buildAggregateLayersQue
 const applyFilters = require('../lib/layers/applyFilters');
 const makeWorkingTableInsertQuery = require('../lib/queries/makeWorkingTableInsertQuery');
 const pgQueryToBoardDataRows = require('../lib/pgQueryToBoardDataRows');
+const reconstructGroupedBoardData = require('../lib/reconstructGroupedBoardData');
 
 const joinLayer = {
   joinType: 'left',
@@ -96,12 +97,16 @@ const compileDataset = async (datasetId, baseState) => {
     workingBoardData,
   );
 
-  console.log(aggregateQuery);
-
-  return {
+  return R.ifElse(
+    () =>
+      workingBoardData.layers.groupings?.groupedBy?.length &&
+      workingBoardData.layerToggles?.groupings,
+    reconstructGroupedBoardData(workingBoardData.layers.groupings),
+    R.identity,
+  )({
     ...workingBoardData,
     rows: pgQueryToBoardDataRows(await pg.query(aggregateQuery), workingBoardData),
-  };
+  });
 };
 
 module.exports = compileDataset;

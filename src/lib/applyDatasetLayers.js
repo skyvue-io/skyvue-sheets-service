@@ -44,6 +44,7 @@ const attachIsUnique = boardData =>
     boardData,
   );
 
+// deprecated
 const applyDatasetLayers = (_id, layers, joinedData, boardData) =>
   R.pipe(
     R.assoc('errors', []),
