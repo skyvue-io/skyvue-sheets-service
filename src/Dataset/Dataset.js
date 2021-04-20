@@ -335,7 +335,8 @@ const Dataset = ({ datasetId, userId }) => {
             .promise();
 
           return process.env.NODE_ENV === 'production'
-            ? `https://skyvue-exported-datasets.s3.amazonaws.com/${fileName}`
+            ? // todo move this to @tarpleyholdings aws account
+              `https://skyvue-exported-datasets.s3.amazonaws.com/${fileName}`
             : `http://skyvue-exported-datasets.s3.amazonaws.com/${fileName}`;
         }),
       );
