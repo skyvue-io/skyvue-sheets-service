@@ -17,6 +17,7 @@ const addLayer = require('../utils/addLayer');
 const parseJson = require('../utils/parseJson');
 const stringifyJson = require('../utils/stringifyJson');
 
+// todo move back to s3 from DO spaces
 const spacesEndpoint = new aws.Endpoint('nyc3.digitaloceanspaces.com');
 const awsConfig = new aws.Config({
   endpoint: spacesEndpoint,
@@ -81,6 +82,7 @@ const Dataset = ({ datasetId, userId }) => {
   let fnQueue;
   let lastSlice;
   let layers = initial_layers;
+  let layerSnapshot = layers;
   let lastCompiledVersion;
   let changeHistory = [];
   let lastAppend;
@@ -90,6 +92,7 @@ const Dataset = ({ datasetId, userId }) => {
   const joinedDatasetCache = {};
 
   const getCompiled = async (layers, baseState, { saveCompilation = true } = {}) => {
+    // todo we can delete literally all of this...
     if (
       R.keys(layers.joins).length > 0 &&
       layers.joins.condition?.datasetId !== datasetId &&
@@ -106,6 +109,7 @@ const Dataset = ({ datasetId, userId }) => {
       );
     }
 
+    // todo use compileDataset. We may not even need this getCompiled function in general tbh.
     const compiled = applyDatasetLayers(
       datasetId,
       layers,
@@ -142,6 +146,7 @@ const Dataset = ({ datasetId, userId }) => {
       return lastSlice;
     },
     setLastAppend: data => {
+      // todo offload this to postgres
       lastAppend = data;
     },
     /**
@@ -149,6 +154,7 @@ const Dataset = ({ datasetId, userId }) => {
      */
     importLastAppended: async ({ columnMapping, dedupeSettings }) => {
       if (!lastAppend) return;
+      // todo will need to audit this
       // save initial baseState size
       // apply to base state
       // save difference
@@ -172,30 +178,34 @@ const Dataset = ({ datasetId, userId }) => {
       }
     },
     estCSVSize: async () => {
+      // todo can we estimate csv size in a postgres query?
       if (!baseState || !lastCompiledVersion) return;
       return R.pipe(boardDataToCSVReadableJSON, jsonToCSV, csv =>
         Buffer.byteLength(csv, 'uft8'),
       )(lastCompiledVersion);
     },
     addLayer: (layerKey, layer) => {
+      // todo interaction with snapshots?
       layers = addLayer(layerKey, layer, layers);
+      layerSnapshot = layers;
     },
     syncLayers: newLayers => {
       if (R.equals(layers, newLayers)) return;
       layers = newLayers;
     },
     saveToHistory: change => {
+      // todo rewrite change history overall. It's pretty garbage right now.
       changeHistory = [...changeHistory, change];
     },
     clearLayers: () => {
       layers = initial_layers;
     },
-    toggleLayer: async (toggle, visible) => {
+    toggleLayer: async (toggleKey, isVisible) => {
       baseState = {
         ...baseState,
         layerToggles: {
           ...baseState?.layerToggles,
-          [toggle]: visible,
+          [toggleKey]: isVisible,
         },
       };
 
@@ -211,11 +221,18 @@ const Dataset = ({ datasetId, userId }) => {
       fnQueue = undefined;
     },
     setLastSlice: (start, end) => {
+      // todo I don't think we need this anymore?
       lastSlice = [start, end];
     },
     load: async () => {
       console.log('attempting to load...', s3Params);
       try {
+        /*
+        TODO:
+          - set pipelineIsInitialized = true
+          - early return out if pipelineIsInitialized
+          - How can we get a super quick check to verify that the base table exists and is healthy?
+        */
         const base = await loadS3ToPostgres(datasetId);
         baseState = await compileDataset(datasetId, base.baseState);
         layers = baseState.layers ?? initial_layers;
@@ -225,7 +242,18 @@ const Dataset = ({ datasetId, userId }) => {
 
       return baseState;
     },
+    // todo write unload function to unload back to s3 and clean up tables on disconnect
+    // todo write saveColumnsToS3 to...Well, saveColumnsToS3
     getSlice: async (start, end, { useCached = false } = {}) => {
+      /* todo FUTURE APPROACH PSEUDO CODE
+      
+      get a list of layers that have changed since the last compilation. compileDataset will account for this.
+      arrayOfLayersToRedo = diff(layers, layerSnapshot);
+      
+      Cache check should:
+        - Check if rows selected are contained in the in-memory data. If so, return that slice.
+        - If not, compileDataset({ future params that will allow us to set row indeces, using sql offset });
+      */
       if (useCached && lastCompiledVersion) {
         return {
           ...lastCompiledVersion,
@@ -240,11 +268,18 @@ const Dataset = ({ datasetId, userId }) => {
         ...compiled,
         layers,
         rows: compiled?.rows?.slice(start, end + 1) ?? [],
-        // compiled?.rows?.filter(row => row.index >= start && row.index <= end) ??
-        // [],
       };
     },
+    // todo make function called getDatasetSummary that returns IDatasetSummary interface from Postgres
     addDiff: async diff => {
+      /*
+        TODO this will be a big one.
+
+        - If diff is a cell change, asynchronously update directly in Postgres. Client will only care about result if there is an error, in which case it will revert.
+        - If diff is a column change, just update the columns in state and call saveColumnsToS3
+        - If diff is a column removal, should we just toggle isDeleted? Idk. This will need to be accounted for in change history audits.
+        - If diff is a row removal, basically same thing
+      */
       const initialBaseState = baseState;
       baseState = addDiff(diff, baseState);
 
@@ -259,6 +294,7 @@ const Dataset = ({ datasetId, userId }) => {
       }
     },
     exportToCSV: async (title, quantity) => {
+      // todo figure literally all of this out
       if (!baseState) return;
       const compiled = await getCompiled(layers, baseState);
       const documents = R.pipe(
@@ -304,6 +340,7 @@ const Dataset = ({ datasetId, userId }) => {
       return objectUrls;
     },
     checkoutToVersion: (versionId, direction) => {
+      // todo fix change history bc it sucks
       const changeHistoryItem =
         changeHistory.find(history => history.revisionId === versionId) ?? {};
 
@@ -317,6 +354,8 @@ const Dataset = ({ datasetId, userId }) => {
       return baseState;
     },
     save: async () => {
+      // TODO Will we still need this? We may be able to just use saveColumnsToS3, then only persist changes to s3 on unload.
+
       if (!baseState) return;
       await s3
         .putObject({
@@ -330,6 +369,7 @@ const Dataset = ({ datasetId, userId }) => {
         .promise();
     },
     saveAsNew: async newDatasetId => {
+      // todo this will absolutely need to change
       const compiled = await getCompiled(layers, baseState);
 
       await s3
