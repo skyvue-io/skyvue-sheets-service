@@ -69,6 +69,7 @@ io.on('connection', async socket => {
   const cnxn = connections[datasetId];
 
   const saveAfterDelay = () => {
+    // todo this might should just save column data so long as cnxn.unload() is reliable.
     clearTimeout(idleSaveTimer[datasetId]);
     cnxn.queueFunc(cnxn.save);
     idleSaveTimer[datasetId] = setTimeout(() => {
@@ -101,10 +102,12 @@ io.on('connection', async socket => {
   });
 
   socket.on('head', async () => {
+    // todo do we use this?
     socket.emit('head', cnxn.head);
   });
 
   socket.on('queryBoardHeaders', async datasetId => {
+    // todo can just return column data from s3, and figure out what columns will be there
     const dataset = datasetId ? await loadDataset(datasetId) : {};
 
     socket.emit(
@@ -160,11 +163,13 @@ io.on('connection', async socket => {
   });
 
   socket.on('diff', async data => {
+    // todo I think this is covered by comments in the method definition
     await cnxn.addDiff(data);
     saveAfterDelay();
   });
 
   socket.on('datadump', async file => {
+    // todo We should likely offload this to postgres
     const csvAsJson = await csv().fromString(file.toString());
     cnxn.setLastAppend(csvAsJson);
     socket.emit('appendPreview', {
@@ -182,6 +187,7 @@ io.on('connection', async socket => {
   });
 
   socket.on('unload', async () => {
+    // todo will need to call cnxn.unload();
     clearTimeout(idleSaveTimer[datasetId]);
     cnxn.runQueuedFunc();
   });
@@ -192,6 +198,7 @@ io.on('connection', async socket => {
   });
 
   socket.on('saveDataset', async () => {
+    // todo I don't think this is ever called
     await cnxn.save();
   });
 
@@ -220,11 +227,13 @@ io.on('connection', async socket => {
 });
 
 io.on('disconnect', socket => {
+  // todo call unload()
   Object.keys(connections).forEach(key => delete connections[key]);
 });
 
 const shouldRunMonitor = false;
 if (shouldRunMonitor && process.env.NODE_ENV === 'development') {
+  // todo should this ping a data store for some period of time so we can get some basic analytics? Probably
   setInterval(() => {
     const formatMemoryUsage = data =>
       `${Math.round((data / 1024 / 1024) * 100) / 100} MB`;

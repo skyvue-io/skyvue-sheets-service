@@ -253,6 +253,9 @@ const Dataset = ({ datasetId, userId }) => {
       Cache check should:
         - Check if rows selected are contained in the in-memory data. If so, return that slice.
         - If not, compileDataset({ future params that will allow us to set row indeces, using sql offset });
+      
+      In general, we want to avoid the insert & onConflict & merge calls that we are currently making every time. 
+      If we can avoid these by tracking changes, that will pay dividends.
       */
       if (useCached && lastCompiledVersion) {
         return {
