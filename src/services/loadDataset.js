@@ -4,7 +4,7 @@ const parseJson = require('../utils/stringifyJson');
 const loadDataset = async datasetId => {
   try {
     const s3Params = {
-      Bucket: 'skyvue-datasets',
+      Bucket: 'skyvue-datasets-temp',
       Key: datasetId,
     };
     const res = await s3.getObject(s3Params).promise();

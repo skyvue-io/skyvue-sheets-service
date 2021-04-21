@@ -1,10 +1,9 @@
 const aws = require('aws-sdk');
 
-const spacesEndpoint = new aws.Endpoint('nyc3.digitaloceanspaces.com');
 const awsConfig = new aws.Config({
-  endpoint: spacesEndpoint,
-  accessKeyId: process.env.SPACES_KEY,
-  secretAccessKey: process.env.SPACES_SECRET,
+  region: 'us-east-2',
+  accessKeyId: process.env.AWS_ACCESSKEY,
+  secretAccessKey: process.env.AWS_SECRET_ACCESSKEY,
 });
 
 const s3 = new aws.S3(awsConfig);
