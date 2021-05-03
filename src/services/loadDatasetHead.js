@@ -3,7 +3,7 @@ const s3 = require('./aws');
 const loadDatasetHead = async datasetId => {
   try {
     const s3Params = {
-      Bucket: 'skyvue-datasets-temp',
+      Bucket: 'skyvue-datasets',
       Key: datasetId,
     };
     const res = await s3.headObject(s3Params).promise();

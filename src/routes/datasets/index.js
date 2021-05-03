@@ -52,7 +52,7 @@ router.post('/process_dataset', async (req, res) => {
     try {
       await s3
         .putObject({
-          Bucket: 'skyvue-datasets-temp',
+          Bucket: 'skyvue-datasets',
           Key: `${key}/columns`,
           Body: await stringifyJson(R.omit(['rows'], boardData)),
           ContentType: 'application/json',
@@ -64,7 +64,7 @@ router.post('/process_dataset', async (req, res) => {
 
     R.splitEvery(50000, boardData.rows).map(async (item, index) => {
       const s3Params = {
-        Bucket: 'skyvue-datasets-temp',
+        Bucket: 'skyvue-datasets',
         Key: `${key}/rows/${index}`,
         Body: await stringifyJson(item),
         ContentType: 'application/json',

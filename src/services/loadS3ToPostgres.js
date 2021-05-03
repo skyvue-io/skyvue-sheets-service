@@ -6,12 +6,12 @@ const createTableFromColumns = require('../lib/queries/createTableFromColumns');
 const s3 = require('./aws');
 const makePostgres = require('./postgres');
 
-const Bucket = 'skyvue-datasets-temp';
+const Bucket = 'skyvue-datasets';
 
 const loadS3ToPostgres = async datasetId => {
   const postgres = await makePostgres();
   const s3Params = {
-    Bucket: 'skyvue-datasets-temp',
+    Bucket: 'skyvue-datasets',
     Key: datasetId,
   };
 

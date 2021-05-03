@@ -71,7 +71,7 @@ const initial_layers = {
 const Dataset = ({ datasetId, userId }) => {
   // todo build authentication that validates a userId has edit privileges
   const s3Params = {
-    Bucket: 'skyvue-datasets-temp',
+    Bucket: 'skyvue-datasets',
     Key: datasetId,
   };
 
