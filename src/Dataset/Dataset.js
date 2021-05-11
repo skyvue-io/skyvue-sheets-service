@@ -11,11 +11,14 @@ const importToBaseState = require('../lib/importToBaseState');
 const loadDataset = require('../services/loadDataset');
 const skyvueFetch = require('../services/skyvueFetch');
 const loadS3ToPostgres = require('../services/loadS3ToPostgres');
+const loadCompiledDataset = require('../services/loadCompiledDataset');
 
 const addDiff = require('../utils/addDiff');
 const addLayer = require('../utils/addLayer');
 const parseJson = require('../utils/parseJson');
 const stringifyJson = require('../utils/stringifyJson');
+
+const { MAX_IN_MEMORY_ROWS } = require('../constants/boardDataMetaConstants');
 
 const awsConfig = new aws.Config({
   region: 'us-east-2',
@@ -89,39 +92,6 @@ const Dataset = ({ datasetId, userId }) => {
   // The cache for compiled boardData objects for each boardId that is joined
   const joinedDatasetCache = {};
 
-  const getCompiled = async (layers, baseState, { saveCompilation = true } = {}) => {
-    // todo we can delete literally all of this...
-    if (
-      R.keys(layers.joins).length > 0 &&
-      layers.joins.condition?.datasetId !== datasetId &&
-      layers.joins.condition.datasetId &&
-      !joinedDatasetCache[layers.joins.condition.datasetId]
-    ) {
-      const joinedDataset = await loadDataset(layers.joins.condition.datasetId);
-      console.log('making the join cache');
-      joinedDatasetCache[layers.joins.condition.datasetId] = applyDatasetLayers(
-        layers.joins.condition.datasetId,
-        joinedDataset?.layers ?? initial_layers,
-        {},
-        joinedDataset,
-      );
-    }
-
-    // todo use compileDataset. We may not even need this getCompiled function in general tbh.
-    const compiled = applyDatasetLayers(
-      datasetId,
-      layers,
-      joinedDatasetCache,
-      baseState,
-    );
-
-    if (saveCompilation) {
-      lastCompiledVersion = compiled;
-    }
-
-    return compiled;
-  };
-
   return {
     get baseState() {
       return baseState;
@@ -130,6 +100,7 @@ const Dataset = ({ datasetId, userId }) => {
       return head;
     },
     get meta() {
+      // todo this should query the id column and get the count
       return {
         rows: baseState?.rows.length,
       };
@@ -144,7 +115,7 @@ const Dataset = ({ datasetId, userId }) => {
       return lastSlice;
     },
     setLastAppend: data => {
-      // todo offload this to postgres
+      // todo offload this to redshift
       lastAppend = data;
     },
     /**
@@ -176,7 +147,7 @@ const Dataset = ({ datasetId, userId }) => {
       }
     },
     estCSVSize: async () => {
-      // todo can we estimate csv size in a postgres query?
+      // todo can we estimate csv size in a redshift query?
       if (!baseState || !lastCompiledVersion) return;
       return R.pipe(boardDataToCSVReadableJSON, jsonToCSV, csv =>
         Buffer.byteLength(csv, 'uft8'),
@@ -225,15 +196,8 @@ const Dataset = ({ datasetId, userId }) => {
     load: async () => {
       console.log('attempting to load...', s3Params);
       try {
-        /*
-        TODO:
-          - set pipelineIsInitialized = true
-          - early return out if pipelineIsInitialized
-          - How can we get a super quick check to verify that the base table exists and is healthy?
-        */
-        const base = await loadS3ToPostgres(datasetId);
-        baseState = await compileDataset(datasetId, base.baseState);
-        layers = baseState.layers ?? initial_layers;
+        baseState = await loadCompiledDataset(datasetId);
+        layers = baseState.layers;
       } catch (e) {
         console.log('error loading dataset from s3', s3Params, e);
       }
@@ -241,34 +205,32 @@ const Dataset = ({ datasetId, userId }) => {
       return baseState;
     },
     // todo write unload function to unload back to s3 and clean up tables on disconnect
-    // todo write saveColumnsToS3 to...Well, saveColumnsToS3
+    // todo write saveColumnsToS3 to...Well, S3
     getSlice: async (start, end, { useCached = false } = {}) => {
+      if (end > MAX_IN_MEMORY_ROWS) {
+        console.log(
+          'This is where I will need to query by offset/row number in Redshift',
+        );
+        return;
+      }
+
       /* todo FUTURE APPROACH PSEUDO CODE
       
-      get a list of layers that have changed since the last compilation. compileDataset will account for this.
+      get a list of layers that have changed since the last compilation. loadCompiledDataset will account for this.
       arrayOfLayersToRedo = diff(layers, layerSnapshot);
       
       Cache check should:
         - Check if rows selected are contained in the in-memory data. If so, return that slice.
-        - If not, compileDataset({ future params that will allow us to set row indeces, using sql offset });
+        - If not, loadCompiledDataset({ future params that will allow us to set row indeces, using sql offset });
       
       In general, we want to avoid the insert & onConflict & merge calls that we are currently making every time. 
       If we can avoid these by tracking changes, that will pay dividends.
       */
-      if (useCached && lastCompiledVersion) {
-        return {
-          ...lastCompiledVersion,
-          layers,
-          rows: lastCompiledVersion.rows?.slice(start - 1, end) ?? [],
-        };
-      }
-
-      const compiled = await getCompiled(layers, baseState);
 
       return {
-        ...compiled,
+        ...baseState,
         layers,
-        rows: compiled?.rows?.slice(start, end + 1) ?? [],
+        rows: baseState?.rows?.slice(start, end + 1) ?? [],
       };
     },
     // todo make function called getDatasetSummary that returns IDatasetSummary interface from Postgres

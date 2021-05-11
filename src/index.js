@@ -73,6 +73,7 @@ io.on('connection', async socket => {
     clearTimeout(idleSaveTimer[datasetId]);
     cnxn.queueFunc(cnxn.save);
     idleSaveTimer[datasetId] = setTimeout(() => {
+      // todo interact with batch update service here?
       cnxn.save();
       cnxn.clearFuncQueue();
     }, 5000);
@@ -95,15 +96,12 @@ io.on('connection', async socket => {
 
   socket.on('loadDataset', async () => {
     await cnxn.load();
-    const slice = await cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
+    const slice = await cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END, {
+      useCached: true,
+    });
     socket.emit('initialDatasetReceived', slice);
-    socket.emit('csvEstimate', await cnxn.estCSVSize());
+    socket.emit('csvEstimate', 200); // todo fixme
     socket.emit('meta', cnxn.meta);
-  });
-
-  socket.on('head', async () => {
-    // todo do we use this?
-    socket.emit('head', cnxn.head);
   });
 
   socket.on('queryBoardHeaders', async datasetId => {

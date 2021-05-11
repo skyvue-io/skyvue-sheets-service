@@ -45,19 +45,19 @@ const attachIsUnique = boardData =>
   );
 
 // deprecated
-const applyDatasetLayers = (_id, layers, joinedData, boardData) =>
-  R.pipe(
-    R.assoc('errors', []),
-    R.assoc('_id', _id),
-    attachIsUnique,
-    attachColumnIdToCells,
-    applyJoins(joinedData, layers.joins),
-    applySmartColumns(layers.smartColumns),
-    applyFilters(layers.filters),
-    attachColumnSummaries,
-    applyGrouping(layers.groupings),
-    applySortings(layers.sortings),
-    updateRowIndeces,
-  )(boardData);
+const applyDatasetLayers = (_id, layers, joinedData, boardData) => boardData;
+// R.pipe(
+//   R.assoc('errors', []),
+//   R.assoc('_id', _id),
+//   attachIsUnique,
+//   attachColumnIdToCells,
+//   applyJoins(joinedData, layers.joins),
+//   applySmartColumns(layers.smartColumns),
+//   applyFilters(layers.filters),
+//   attachColumnSummaries,
+//   applyGrouping(layers.groupings),
+//   applySortings(layers.sortings),
+//   updateRowIndeces,
+// )(boardData);
 
 module.exports = applyDatasetLayers;

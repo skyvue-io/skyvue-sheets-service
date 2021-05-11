@@ -1,5 +1,5 @@
 const R = require('ramda');
-const knex = require('../../utils/knex');
+const knex = require('../../../utils/knex');
 
 const mapAggregatesToPostgres = (colId_, aggregation, colLookup) => {
   const colId = `"${colId_}"`;

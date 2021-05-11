@@ -1,10 +1,10 @@
 const R = require('ramda');
 
 const loadS3ToPostgres = require('./loadS3ToPostgres');
-const makePostgres = require('./postgres');
+const makeRedshift = require('./redshift');
 
 const knex = require('../utils/knex');
-const pgQueryToBoardDataRows = require('../lib/pgQueryToBoardDataRows');
+const queryResponseToBoardDataRows = require('../lib/queryResponseToBoardDataRows');
 const makeJoinQuery = require('../lib/queries/makeJoinQuery');
 
 const applyJoinToColumns = (columns, joinedColumns, { condition }) =>
@@ -29,7 +29,7 @@ const applyJoinToColumns = (columns, joinedColumns, { condition }) =>
 // plucks data from s3
 // ensures that joined tables are in postgres prior to returning joined response
 const queryJoinedDataset = async (datasetId, baseState) => {
-  const postgres = await makePostgres();
+  const postgres = await makeRedshift();
   const { joins } = baseState?.layers ?? {};
 
   if (
@@ -39,7 +39,7 @@ const queryJoinedDataset = async (datasetId, baseState) => {
   ) {
     return {
       ...baseState,
-      rows: pgQueryToBoardDataRows(
+      rows: queryResponseToBoardDataRows(
         await postgres.query(knex.select().table(`${datasetId}_base`).toString()),
         baseState,
       ),
@@ -59,7 +59,7 @@ const queryJoinedDataset = async (datasetId, baseState) => {
 
   return {
     ...updatedBaseState,
-    rows: pgQueryToBoardDataRows(
+    rows: queryResponseToBoardDataRows(
       await postgres.query(makeJoinQuery(datasetId, joins)),
       updatedBaseState,
     ),

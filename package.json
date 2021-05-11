@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node --max-old-space-size=107374182400 src/index.js",
+    "start": "node src/index.js",
     "dev": "nodemon --exec npm start",
     "test": "test"
   },

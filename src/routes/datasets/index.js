@@ -6,10 +6,10 @@ const csv = require('csvtojson');
 const pRetry = require('p-retry');
 
 const skyvueFetch = require('../../services/skyvueFetch');
-const compileDataset = require('../../services/compileDataset');
+const loadCompiledDataset = require('../../services/loadCompiledDataset');
 const loadS3ToPostgres = require('../../services/loadS3ToPostgres');
 const s3 = require('../../services/aws');
-const makePostgres = require('../../services/postgres');
+const makeRedshift = require('../../services/redshift');
 const parseBoardData = require('../../lib/parseBoardData');
 
 const stringifyJson = require('../../utils/stringifyJson');
@@ -17,12 +17,12 @@ const stringifyJson = require('../../utils/stringifyJson');
 router.post('/test_load', async (req, res) => {
   const { key } = req.body;
   const base = await loadS3ToPostgres(key);
-  const baseState = await compileDataset(key, base.baseState);
+  const baseState = await loadCompiledDataset(key, base.baseState);
   res.json(baseState);
 });
 
 router.get('/test_get', async (req, res) => {
-  const pg = await makePostgres();
+  const pg = await makeRedshift();
   console.log('got postgres');
   const response = await pg.query('select * from test');
   console.log(response);

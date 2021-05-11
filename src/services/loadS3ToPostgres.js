@@ -4,12 +4,12 @@ const knex = require('../utils/knex');
 const createTableFromColumns = require('../lib/queries/createTableFromColumns');
 
 const s3 = require('./aws');
-const makePostgres = require('./postgres');
+const makeRedshift = require('./redshift');
 
 const Bucket = 'skyvue-datasets';
 
 const loadS3ToPostgres = async datasetId => {
-  const postgres = await makePostgres();
+  const postgres = await makeRedshift();
   const s3Params = {
     Bucket: 'skyvue-datasets',
     Key: datasetId,

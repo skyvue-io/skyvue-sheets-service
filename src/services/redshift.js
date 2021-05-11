@@ -1,11 +1,11 @@
 const { Client } = require('pg');
 
 const makeRedshift = async () => {
-  const client = new Client();
+  const redshift = new Client();
 
-  await client.connect();
+  await redshift.connect();
 
-  return client;
+  return redshift;
 };
 
 module.exports = makeRedshift;
