@@ -23,9 +23,7 @@ router.post('/test_load', async (req, res) => {
 
 router.get('/test_get', async (req, res) => {
   const pg = await makeRedshift();
-  console.log('got postgres');
   const response = await pg.query('select * from test');
-  console.log(response);
 
   res.send(response);
 });

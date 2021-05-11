@@ -17,7 +17,6 @@ router.use('/datasets', require('./datasets'));
 
 router.get('/test', async (req, res) => {
   const client = await makeRedshift();
-  console.log(Object.keys(client), client._queryable, client._connected);
   const result = await client.query('select * from information_schema.tables');
   res.json(result.rows);
 });
