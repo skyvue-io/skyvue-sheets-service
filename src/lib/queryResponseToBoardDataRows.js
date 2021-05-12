@@ -14,10 +14,6 @@ const queryResponseToBoardDataRows = (data, columns) =>
       cells: R.pipe(
         R.keys,
         R.filter(x => x !== 'id'),
-        x => {
-          console.log(columns);
-          return x;
-        },
         sortKeysByColumn(R.pluck('_id', columns)),
         mapIndexed((key, index) => ({
           _id: `${row.id}-${columns[index]?._id ?? ''}`,

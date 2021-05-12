@@ -36,8 +36,7 @@ const makeJoinQuery = R.curry((datasetId, joinLayer, knex) => {
         `${baseTable}.*`,
         ...joinLayer.condition.select.map(colId => `${joinedTable}.${colId}`),
       ),
-    knex => knex.clone(),
-  )(knex);
+  )(knex.clone());
 });
 
 module.exports = makeJoinQuery;

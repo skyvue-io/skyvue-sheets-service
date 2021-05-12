@@ -41,6 +41,14 @@ const temp_layers = {
       ],
     },
   },
+  groupings: {
+    groupedBy: ['f27ef665-e16f-4af1-846b-a6f8e1c9620e'],
+    // todo this needs to be an array so you can see different aggregations on the same column
+    columnAggregates: {
+      '4271f58e-4182-4506-8555-2375d2c42fa7': 'sum',
+    },
+  },
+  sortings: [{ key: 'f27ef665-e16f-4af1-846b-a6f8e1c9620e', direction: 'asc' }],
 };
 
 // assumes data is already in postgres
@@ -64,6 +72,11 @@ const loadCompiledDataset = async (datasetId, columnsAndLayers) => {
       layers.joins &&
       Object.keys(layers.joins).length > 0 &&
       layerToggles.joins === true,
+    sortings: (layers.sortings ?? []).length > 0,
+    groupings:
+      layers.groupings &&
+      Object.keys(layers.groupings).length > 0 &&
+      layerToggles.groupings === true,
   };
 
   const applyIfVisible = (layerKey, onTrue) =>
@@ -80,16 +93,28 @@ const loadCompiledDataset = async (datasetId, columnsAndLayers) => {
     layers,
     layerToggles,
     columns: newColumns,
+    underlyingColumns: newColumns,
     rows: queryResponseToBoardDataRows(
       await redshift.query(
-        makeQueryFromLayers(applyIfVisible, datasetId, { ...columns, layers }),
+        makeQueryFromLayers(
+          layerVisibilityTable.groupings,
+          applyIfVisible,
+          datasetId,
+          {
+            columns: newColumns,
+            layers,
+          },
+        ),
       ),
       newColumns,
     ),
   };
   // todo apply layers to column data
 
-  return baseState;
+  return applyIfVisible(
+    'groupings',
+    reconstructGroupedBoardData(layers.groupings),
+  )(baseState);
 
   // const pg = await makeRedshift();
 
