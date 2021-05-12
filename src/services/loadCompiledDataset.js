@@ -60,7 +60,7 @@ const loadCompiledDataset = async (datasetId, columnsAndLayers) => {
   const layers_ = rest.layers ?? initial_layers;
   const layers = {
     ...layers_,
-    ...temp_layers,
+    // ...temp_layers,
   };
 
   const joinedDatasetColumns = layers.joins?.condition?.datasetId
@@ -85,7 +85,7 @@ const loadCompiledDataset = async (datasetId, columnsAndLayers) => {
   const newColumns = R.pipe(
     applyIfVisible(
       'joins',
-      applyJoinToColumns(joinedDatasetColumns.columns, layers.joins),
+      applyJoinToColumns(joinedDatasetColumns?.columns ?? {}, layers.joins),
     ),
   )(columns);
 
