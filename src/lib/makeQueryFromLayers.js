@@ -1,4 +1,5 @@
 const R = require('ramda');
+const { format } = require('sql-formatter');
 const knex = require('../utils/knex');
 const makeTableName = require('./makeTableName');
 
@@ -26,7 +27,7 @@ const makeQueryFromLayers = (
       makeSortingQuery(applyGrouping, layers.sortings, layers.groupings),
     ),
     x => {
-      console.log('current query', x.toString());
+      console.log('current query', format(x.toString()));
       return x;
     },
     knex => knex.limit(MAX_IN_MEMORY_ROWS).toString(),
