@@ -12,6 +12,7 @@ const loadDataset = require('../services/loadDataset');
 const skyvueFetch = require('../services/skyvueFetch');
 const loadS3ToPostgres = require('../services/loadS3ToPostgres');
 const loadCompiledDataset = require('../services/loadCompiledDataset');
+const saveColumnsToS3 = require('../services/saveColumnsToS3');
 
 const addDiff = require('../utils/addDiff');
 const addLayer = require('../utils/addLayer');
@@ -75,7 +76,7 @@ const Dataset = ({ datasetId, userId }) => {
   // todo build authentication that validates a userId has edit privileges
   const s3Params = {
     Bucket: 'skyvue-datasets',
-    Key: datasetId,
+    Key: `${datasetId}/columns/0`,
   };
 
   let head;
@@ -146,15 +147,16 @@ const Dataset = ({ datasetId, userId }) => {
         console.error(e);
       }
     },
-    estCSVSize: async () => {
-      // todo can we estimate csv size in a redshift query?
-      if (!baseState || !lastCompiledVersion) return;
-      return R.pipe(boardDataToCSVReadableJSON, jsonToCSV, csv =>
-        Buffer.byteLength(csv, 'uft8'),
-      )(lastCompiledVersion);
-    },
+    estCSVSize: async () => 205,
+    // todo can we estimate csv size in a redshift query?
+    // if (!baseState || !lastCompiledVersion) return;
+    // return R.pipe(boardDataToCSVReadableJSON, jsonToCSV, csv =>
+    //   Buffer.byteLength(csv, 'uft8'),
+    // )(lastCompiledVersion);
     addLayer: (layerKey, layer) => {
+      console.log(layerKey, layer);
       // todo interaction with snapshots?
+      baseState = R.assoc('layers', addLayer(layerKey, layer, layers))(baseState);
       layers = addLayer(layerKey, layer, layers);
       layerSnapshot = layers;
     },
@@ -194,9 +196,17 @@ const Dataset = ({ datasetId, userId }) => {
       lastSlice = [start, end];
     },
     load: async () => {
-      console.log('attempting to load...', s3Params);
+      console.log(
+        'attempting to load...',
+        s3Params,
+        baseState ? R.omit(['rows'], baseState) : undefined,
+      );
       try {
-        baseState = await loadCompiledDataset(datasetId);
+        baseState = await loadCompiledDataset(
+          datasetId,
+          baseState ? R.omit(['rows'], baseState) : undefined,
+        );
+        console.log(R.keys(baseState));
         layers = baseState.layers;
       } catch (e) {
         console.log('error loading dataset from s3', s3Params, e);
@@ -243,18 +253,20 @@ const Dataset = ({ datasetId, userId }) => {
         - If diff is a column removal, should we just toggle isDeleted? Idk. This will need to be accounted for in change history audits.
         - If diff is a row removal, basically same thing
       */
-      const initialBaseState = baseState;
-      baseState = addDiff(diff, baseState);
-
-      if (diff.colDiff?.type === 'removal') {
-        const removedColumn = diff.colDiff.diff[0];
-        if (!removedColumn) return;
-        const colIndex = initialBaseState.columns.findIndex(
-          col => col._id === removedColumn?._id,
-        );
-        const cellsInColumn = initialBaseState.rows.map(row => row.cells[colIndex]);
-        removedColumns[removedColumn._id] = cellsInColumn;
+      // const initialBaseState = baseState;
+      if (diff?.colDiff?.type === 'modification') {
+        baseState = addDiff(diff, baseState);
       }
+
+      // if (diff.colDiff?.type === 'removal') {
+      //   const removedColumn = diff.colDiff.diff[0];
+      //   if (!removedColumn) return;
+      //   const colIndex = initialBaseState.columns.findIndex(
+      //     col => col._id === removedColumn?._id,
+      //   );
+      //   const cellsInColumn = initialBaseState.rows.map(row => row.cells[colIndex]);
+      //   removedColumns[removedColumn._id] = cellsInColumn;
+      // }
     },
     exportToCSV: async (title, quantity) => {
       // todo figure literally all of this out
@@ -317,20 +329,17 @@ const Dataset = ({ datasetId, userId }) => {
 
       return baseState;
     },
-    save: async () => {
-      // TODO Will we still need this? We may be able to just use saveColumnsToS3, then only persist changes to s3 on unload.
-
-      if (!baseState) return;
-      await s3
-        .putObject({
-          ...s3Params,
-          ContentType: 'application/json',
-          Body: await stringifyJson({
-            ...baseState,
-            layers,
-          }),
-        })
-        .promise();
+    saveHead: async () => {
+      if (!baseState?.columns) return;
+      const headToPersist = R.pipe(
+        R.omit(['rows', 'underlyingColumns', 'baseColumns']),
+        R.assoc('columns', baseState.baseColumns),
+      )(baseState);
+      console.log(
+        'saving something like this',
+        JSON.stringify(headToPersist, undefined, 2),
+      );
+      await saveColumnsToS3(datasetId, headToPersist);
     },
     saveAsNew: async newDatasetId => {
       // todo this will absolutely need to change

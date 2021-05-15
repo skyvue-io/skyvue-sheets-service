@@ -18,6 +18,7 @@ const reconstructGroupedBoardData = R.curry((groupLayer, boardData) => {
       ? `${_.startCase(columnAggregates[colId])} of ${columnsLookup[colId]?.value}`
       : columnsLookup[colId]?.value,
     dataType: columnsLookup[colId]?.dataType ?? 'number',
+    isGrouped: true,
   }))(colIdsRepresented);
 
   return {

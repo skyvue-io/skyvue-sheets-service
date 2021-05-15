@@ -54,8 +54,17 @@ const temp_layers = {
 // assumes data is already in postgres
 const loadCompiledDataset = async (datasetId, columnsAndLayers) => {
   const redshift = await makeRedshift();
-  const { columns, layerToggles, ...rest } =
+  const { columns, underlyingColumns, baseColumns, layerToggles, ...rest } =
     columnsAndLayers ?? (await loadColumns(datasetId));
+
+  if (!columnsAndLayers) {
+    console.log('columns and layers loaded from s3 look like this', {
+      columns,
+      layers: rest.layers,
+    });
+  }
+
+  console.log('columnsandlayers parameter', columnsAndLayers);
 
   const layers_ = rest.layers ?? initial_layers;
   const layers = {
@@ -87,13 +96,17 @@ const loadCompiledDataset = async (datasetId, columnsAndLayers) => {
       'joins',
       applyJoinToColumns(joinedDatasetColumns?.columns ?? {}, layers.joins),
     ),
-  )(columns);
+  )(underlyingColumns ?? columns);
+
+  console.log('new columns', newColumns);
+  console.log('base columns', underlyingColumns);
 
   const baseState = {
     layers,
     layerToggles,
     columns: newColumns,
     underlyingColumns: newColumns,
+    baseColumns: baseColumns ?? columns,
     rows: queryResponseToBoardDataRows(
       await redshift.query(
         makeQueryFromLayers(

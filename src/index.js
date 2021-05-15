@@ -71,16 +71,18 @@ io.on('connection', async socket => {
   const saveAfterDelay = () => {
     // todo this might should just save column data so long as cnxn.unload() is reliable.
     clearTimeout(idleSaveTimer[datasetId]);
-    cnxn.queueFunc(cnxn.save);
+    cnxn.queueFunc(cnxn.saveHead);
     idleSaveTimer[datasetId] = setTimeout(() => {
       // todo interact with batch update service here?
-      cnxn.save();
+      cnxn.saveHead();
       cnxn.clearFuncQueue();
     }, 5000);
   };
 
   const refreshInView = async cnxn => {
     try {
+      console.log('refreshing in view');
+      await cnxn.load();
       const slice = await cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
       socket.emit('setBoardData', slice);
       socket.emit('csvEstimate', await cnxn.estCSVSize());
@@ -161,7 +163,6 @@ io.on('connection', async socket => {
   });
 
   socket.on('diff', async data => {
-    // todo I think this is covered by comments in the method definition
     await cnxn.addDiff(data);
     saveAfterDelay();
   });
@@ -197,7 +198,7 @@ io.on('connection', async socket => {
 
   socket.on('saveDataset', async () => {
     // todo I don't think this is ever called
-    await cnxn.save();
+    await cnxn.saveHead();
   });
 
   socket.on('saveAsNew', async ({ newDatasetId }) => {
