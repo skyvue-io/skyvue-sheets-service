@@ -7,6 +7,7 @@ const jsonToCSV = require('../lib/jsonToCSV');
 const { formatValueFromBoardData } = require('../lib/formatValue');
 const makeBoardDataFromVersion = require('../lib/makeBoardDataFromVersion');
 const importToBaseState = require('../lib/importToBaseState');
+const sortDatasetByColumnOrder = require('../lib/sortDatasetByColumnOrder');
 
 const loadDataset = require('../services/loadDataset');
 const skyvueFetch = require('../services/skyvueFetch');
@@ -88,6 +89,7 @@ const Dataset = ({ datasetId, userId }) => {
   let lastCompiledVersion;
   let changeHistory = [];
   let lastAppend;
+  let colOrder;
   // The archive for removed columns
   const removedColumns = {};
   // The cache for compiled boardData objects for each boardId that is joined
@@ -195,6 +197,9 @@ const Dataset = ({ datasetId, userId }) => {
       // todo I don't think we need this anymore?
       lastSlice = [start, end];
     },
+    setColOrder: newColOrder => {
+      colOrder = newColOrder;
+    },
     load: async () => {
       console.log(
         'attempting to load...',
@@ -206,8 +211,12 @@ const Dataset = ({ datasetId, userId }) => {
           datasetId,
           baseState ? R.omit(['rows'], baseState) : undefined,
         );
-        console.log(R.keys(baseState));
+        console.log('colorder', baseState.colOrder);
         layers = baseState.layers;
+        if (!baseState.colOrder && !colOrder) {
+          colOrder = R.pluck('_id', baseState.underlyingColumns);
+          console.log('colOrder', colOrder);
+        }
       } catch (e) {
         console.log('error loading dataset from s3', s3Params, e);
       }
@@ -215,7 +224,6 @@ const Dataset = ({ datasetId, userId }) => {
       return baseState;
     },
     // todo write unload function to unload back to s3 and clean up tables on disconnect
-    // todo write saveColumnsToS3 to...Well, S3
     getSlice: async (start, end, { useCached = false } = {}) => {
       if (end > MAX_IN_MEMORY_ROWS) {
         console.log(
@@ -237,11 +245,11 @@ const Dataset = ({ datasetId, userId }) => {
       If we can avoid these by tracking changes, that will pay dividends.
       */
 
-      return {
+      return sortDatasetByColumnOrder(colOrder, {
         ...baseState,
         layers,
         rows: baseState?.rows?.slice(start, end + 1) ?? [],
-      };
+      });
     },
     // todo make function called getDatasetSummary that returns IDatasetSummary interface from Postgres
     addDiff: async diff => {
@@ -332,9 +340,11 @@ const Dataset = ({ datasetId, userId }) => {
     saveHead: async () => {
       if (!baseState?.columns) return;
       const headToPersist = R.pipe(
+        R.assoc('colOrder', colOrder),
         R.omit(['rows', 'underlyingColumns', 'baseColumns']),
         R.assoc('columns', baseState.baseColumns),
       )(baseState);
+
       console.log(
         'saving something like this',
         JSON.stringify(headToPersist, undefined, 2),

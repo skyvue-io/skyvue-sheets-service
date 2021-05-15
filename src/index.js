@@ -160,6 +160,10 @@ io.on('connection', async socket => {
     saveAfterDelay();
   });
 
+  socket.on('setColOrder', colOrder => {
+    cnxn.setColOrder(colOrder);
+  });
+
   socket.on('diff', async data => {
     await cnxn.addDiff(data);
     saveAfterDelay();

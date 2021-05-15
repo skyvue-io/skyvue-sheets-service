@@ -1,9 +1,7 @@
 const R = require('ramda');
 
 const mapIndexed = R.addIndex(R.map);
-
-const sortKeysByColumn = columnIds =>
-  R.sortBy(R.pipe(R.prop('id'), R.indexOf(R.__, columnIds)));
+const sortKeysByColumnOrder = require('./sortKeysByColumnOrder');
 
 const queryResponseToBoardDataRows = (data, columns) =>
   R.pipe(
@@ -14,7 +12,7 @@ const queryResponseToBoardDataRows = (data, columns) =>
       cells: R.pipe(
         R.keys,
         R.filter(x => x !== 'id'),
-        sortKeysByColumn(R.pluck('_id', columns)),
+        sortKeysByColumnOrder(R.pluck('_id', columns)),
         mapIndexed((key, index) => ({
           _id: `${row.id}-${columns[index]?._id ?? ''}`,
           columnId: columns[index]?._id,

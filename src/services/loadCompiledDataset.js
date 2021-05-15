@@ -61,14 +61,12 @@ const loadCompiledDataset = async (
   const { columns, underlyingColumns, baseColumns, layerToggles, ...rest } =
     columnsAndLayers ?? (await loadColumns(datasetId));
 
-  if (!columnsAndLayers) {
-    console.log('columns and layers loaded from s3 look like this', {
-      columns,
-      layers: rest.layers,
-    });
-  }
-
-  console.log('columnsandlayers parameter', columnsAndLayers);
+  // if (!columnsAndLayers) {
+  //   console.log('columns and layers loaded from s3 look like this', {
+  //     columns,
+  //     layers: rest.layers,
+  //   });
+  // }
 
   const layers_ = rest.layers ?? initial_layers;
   const layers = {
@@ -109,9 +107,6 @@ const loadCompiledDataset = async (
       layers,
     };
   }
-
-  console.log('new columns', newColumns);
-  console.log('base columns', underlyingColumns);
 
   const baseState = {
     layers,
