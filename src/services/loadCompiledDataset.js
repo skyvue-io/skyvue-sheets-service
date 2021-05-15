@@ -52,7 +52,11 @@ const temp_layers = {
 };
 
 // assumes data is already in postgres
-const loadCompiledDataset = async (datasetId, columnsAndLayers) => {
+const loadCompiledDataset = async (
+  datasetId,
+  columnsAndLayers,
+  { onlyHead = false } = {},
+) => {
   const redshift = await makeRedshift();
   const { columns, underlyingColumns, baseColumns, layerToggles, ...rest } =
     columnsAndLayers ?? (await loadColumns(datasetId));
@@ -96,7 +100,15 @@ const loadCompiledDataset = async (datasetId, columnsAndLayers) => {
       'joins',
       applyJoinToColumns(joinedDatasetColumns?.columns ?? {}, layers.joins),
     ),
-  )(underlyingColumns ?? columns);
+  )(baseColumns ?? columns);
+
+  if (onlyHead) {
+    return {
+      _id: datasetId,
+      columns: newColumns,
+      layers,
+    };
+  }
 
   console.log('new columns', newColumns);
   console.log('base columns', underlyingColumns);

@@ -11,6 +11,8 @@ const R = require('ramda');
 const Sentry = require('@sentry/node');
 const Tracing = require('@sentry/tracing');
 
+const loadCompiledDataset = require('./services/loadCompiledDataset');
+
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
 
@@ -108,15 +110,11 @@ io.on('connection', async socket => {
 
   socket.on('queryBoardHeaders', async datasetId => {
     // todo can just return column data from s3, and figure out what columns will be there
-    const dataset = datasetId ? await loadDataset(datasetId) : {};
+    const queriedDataset = await loadCompiledDataset(datasetId, undefined, {
+      onlyHead: true,
+    });
 
-    socket.emit(
-      'returnQueryBoardHeaders',
-      R.omit(
-        ['rows'],
-        applyDatasetLayers(datasetId, dataset.layers ?? initial_layers, {}, dataset),
-      ),
-    );
+    socket.emit('returnQueryBoardHeaders', queriedDataset);
   });
 
   // Only use this route to return a slice from the cached dataset (e.g. on a scroll event).
