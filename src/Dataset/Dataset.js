@@ -49,21 +49,6 @@ const s3 = new aws.S3(awsConfig);
  * }} boardData
  */
 
-// {
-//   joinType: 'left',
-//   condition: {
-//     datasetId: '601c7f25e6c34ab01dc5f726',
-//     select: ['22203267-470e-4654-92f1-22d3446c9104'],
-//     on: [
-//       {
-//         mainColumnId: '757909e0-3045-44cb-87d9-853c2595cfbc',
-//         joinedColumnId: 'd936f989-82fe-49c1-9483-2eacfe9c43bd',
-//         as: 'Owner name',
-//       },
-//     ],
-//   },
-// },
-
 const initial_layers = {
   joins: {},
   filters: [],
@@ -90,6 +75,7 @@ const Dataset = ({ datasetId, userId }) => {
   let changeHistory = [];
   let lastAppend;
   let colOrder;
+  let deletedObjects;
   // The archive for removed columns
   const removedColumns = {};
   // The cache for compiled boardData objects for each boardId that is joined
@@ -200,6 +186,9 @@ const Dataset = ({ datasetId, userId }) => {
     setColOrder: newColOrder => {
       colOrder = newColOrder;
     },
+    setDeletedObjects: newDeletedObjects => {
+      deletedObjects = newDeletedObjects;
+    },
     load: async () => {
       console.log(
         'attempting to load...',
@@ -211,11 +200,13 @@ const Dataset = ({ datasetId, userId }) => {
           datasetId,
           baseState ? R.omit(['rows'], baseState) : undefined,
         );
-        console.log('colorder', baseState.colOrder);
         layers = baseState.layers;
         if (!baseState.colOrder && !colOrder) {
           colOrder = R.pluck('_id', baseState.underlyingColumns);
           console.log('colOrder', colOrder);
+        }
+        if (!deletedObjects && baseState.deletedObjects) {
+          deletedObjects = baseState.deletedObjects;
         }
       } catch (e) {
         console.log('error loading dataset from s3', s3Params, e);
@@ -341,6 +332,7 @@ const Dataset = ({ datasetId, userId }) => {
       if (!baseState?.columns) return;
       const headToPersist = R.pipe(
         R.assoc('colOrder', colOrder),
+        R.assoc('deletedObjects', deletedObjects),
         R.omit(['rows', 'underlyingColumns', 'baseColumns']),
         R.assoc('columns', baseState.baseColumns),
       )(baseState);

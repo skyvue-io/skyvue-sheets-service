@@ -58,8 +58,14 @@ const loadCompiledDataset = async (
   { onlyHead = false } = {},
 ) => {
   const redshift = await makeRedshift();
-  const { columns, underlyingColumns, baseColumns, layerToggles, ...rest } =
-    columnsAndLayers ?? (await loadColumns(datasetId));
+  const {
+    columns,
+    underlyingColumns,
+    baseColumns,
+    layerToggles,
+    deletedObjects,
+    ...rest
+  } = columnsAndLayers ?? (await loadColumns(datasetId));
 
   // if (!columnsAndLayers) {
   //   console.log('columns and layers loaded from s3 look like this', {
@@ -111,6 +117,7 @@ const loadCompiledDataset = async (
   const baseState = {
     layers,
     layerToggles,
+    deletedObjects,
     columns: newColumns,
     underlyingColumns: newColumns,
     baseColumns: baseColumns ?? columns,
@@ -135,60 +142,6 @@ const loadCompiledDataset = async (
     'groupings',
     reconstructGroupedBoardData(layers.groupings),
   )(baseState);
-
-  // const pg = await makeRedshift();
-
-  // const boardData = await queryJoinedDataset(datasetId, {
-  //   ...baseState,
-  //   layers: baseState?.layers ?? initial_layers,
-  // });
-
-  // const { layers } = boardData;
-
-  // await pg.query(createTableFromColumns(`${datasetId}_working`, boardData.columns));
-
-  // const smartColumnsAndFiltersApplied = R.pipe(
-  //   applySmartColumns(layers.smartColumns),
-  //   applyFilters(layers.filters),
-  // )(boardData);
-
-  // if (
-  //   smartColumnsAndFiltersApplied.columns.filter(
-  //     col => col.isJoined || col.isSmartColumn,
-  //   ).length > 0
-  // ) {
-  //   await pg.query(knex.schema.dropTable(`${datasetId}_working`).toString());
-  //   await pg.query(
-  //     createTableFromColumns(`${datasetId}_working`, boardData.columns),
-  //   );
-  // }
-
-  // const workingBoardData = R.assoc(
-  //   'rows',
-  //   queryResponseToBoardDataRows(
-  //     await pg.query(
-  //       makeWorkingTableInsertQuery(datasetId)(smartColumnsAndFiltersApplied),
-  //     ),
-  //     boardData,
-  //   ),
-  //   boardData,
-  // );
-
-  // const aggregateQuery = buildAggregateLayersQuery(
-  //   `${datasetId}_working`,
-  //   workingBoardData,
-  // );
-
-  // return R.ifElse(
-  //   () =>
-  //     workingBoardData.layers.groupings?.groupedBy?.length &&
-  //     workingBoardData.layerToggles?.groupings,
-  //   reconstructGroupedBoardData(workingBoardData.layers.groupings),
-  //   R.identity,
-  // )({
-  //   ...workingBoardData,
-  //   rows: queryResponseToBoardDataRows(await pg.query(aggregateQuery), workingBoardData),
-  // });
 };
 
 module.exports = loadCompiledDataset;

@@ -135,10 +135,12 @@ io.on('connection', async socket => {
     socket.emit('setBoardData', response);
   });
 
-  socket.on('layer', async ({ layerKey, layerData }) => {
+  socket.on('layer', async ({ layerKey, layerData, refresh = true }) => {
     try {
       cnxn.addLayer(layerKey, layerData);
-      await refreshInView(cnxn);
+      if (refresh) {
+        await refreshInView(cnxn);
+      }
       saveAfterDelay();
     } catch (e) {
       socket.emit('boardError', {
@@ -147,6 +149,11 @@ io.on('connection', async socket => {
         target: e._id,
       });
     }
+  });
+
+  socket.on('setDeletedObjects', deletedObjects => {
+    cnxn.setDeletedObjects(deletedObjects);
+    saveAfterDelay();
   });
 
   socket.on('clearLayers', async params => {
