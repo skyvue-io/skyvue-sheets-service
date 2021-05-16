@@ -265,7 +265,7 @@ if (shouldRunMonitor && process.env.NODE_ENV === 'development') {
   }, 10000);
 }
 
-const port = process.env.PORT || 8080;
-http.listen(port, () => {
-  console.log(`listening on *:${port}`);
+const PORT = process.env.PORT || 8080;
+http.listen(PORT, () => {
+  console.log(`listening on *:${PORT}`);
 });
