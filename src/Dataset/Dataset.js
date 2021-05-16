@@ -75,7 +75,6 @@ const Dataset = ({ datasetId, userId }) => {
   let changeHistory = [];
   let lastAppend;
   let colOrder;
-  let deletedObjects;
   // The archive for removed columns
   const removedColumns = {};
   // The cache for compiled boardData objects for each boardId that is joined
@@ -187,7 +186,10 @@ const Dataset = ({ datasetId, userId }) => {
       colOrder = newColOrder;
     },
     setDeletedObjects: newDeletedObjects => {
-      deletedObjects = newDeletedObjects;
+      baseState = {
+        ...baseState,
+        deletedObjects: newDeletedObjects,
+      };
     },
     load: async () => {
       console.log(
@@ -204,9 +206,6 @@ const Dataset = ({ datasetId, userId }) => {
         if (!baseState.colOrder && !colOrder) {
           colOrder = R.pluck('_id', baseState.underlyingColumns);
           console.log('colOrder', colOrder);
-        }
-        if (!deletedObjects && baseState.deletedObjects) {
-          deletedObjects = baseState.deletedObjects;
         }
       } catch (e) {
         console.log('error loading dataset from s3', s3Params, e);
@@ -332,7 +331,6 @@ const Dataset = ({ datasetId, userId }) => {
       if (!baseState?.columns) return;
       const headToPersist = R.pipe(
         R.assoc('colOrder', colOrder),
-        R.assoc('deletedObjects', deletedObjects),
         R.omit(['rows', 'underlyingColumns', 'baseColumns']),
         R.assoc('columns', baseState.baseColumns),
       )(baseState);
