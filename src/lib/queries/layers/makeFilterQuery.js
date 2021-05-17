@@ -1,3 +1,5 @@
+const R = require('ramda');
+
 const chainPredicateMap = {
   AND: 'where',
   OR: 'orWhere',
