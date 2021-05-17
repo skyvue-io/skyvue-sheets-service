@@ -89,6 +89,7 @@ const loadCompiledDataset = async (
       layers.joins &&
       Object.keys(layers.joins).length > 0 &&
       layerToggles.joins === true,
+    filters: (layers.filters ?? []).length > 0 && layerToggles.filters === true,
     sortings: (layers.sortings ?? []).length > 0,
     groupings:
       layers.groupings &&
