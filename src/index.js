@@ -46,7 +46,7 @@ app.use(
   }),
 );
 app.get('/', (req, res) => {
-  res.send(`Datasets service is alive!`);
+  res.send(`Datasets service is alive!!`);
 });
 
 app.use('/api', require('./routes'));
