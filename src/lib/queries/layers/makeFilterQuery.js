@@ -10,6 +10,10 @@ const whereRecursive = (context, parentPredicate, input) =>
     const context = this;
     const [chainPredicateKey, firstEntry, ...entries] = input;
 
+    if (!chainPredicateKey || !firstEntry) {
+      return;
+    }
+
     const chainPredicate = chainPredicateMap[chainPredicateKey];
     context[chainPredicate](firstEntry.key, firstEntry.value);
 
