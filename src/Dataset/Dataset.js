@@ -8,10 +8,10 @@ const { formatValueFromBoardData } = require('../lib/formatValue');
 const makeBoardDataFromVersion = require('../lib/makeBoardDataFromVersion');
 const importToBaseState = require('../lib/importToBaseState');
 const sortDatasetByColumnOrder = require('../lib/sortDatasetByColumnOrder');
+const makeSaveRowsQuery = require('../lib/queries/makeSaveRowsQuery');
 
-const loadDataset = require('../services/loadDataset');
 const skyvueFetch = require('../services/skyvueFetch');
-const loadS3ToPostgres = require('../services/loadS3ToPostgres');
+const makeRedshift = require('../services/redshift');
 const loadCompiledDataset = require('../services/loadCompiledDataset');
 const saveColumnsToS3 = require('../services/saveColumnsToS3');
 
@@ -73,6 +73,7 @@ const Dataset = ({ datasetId, userId }) => {
   let layerSnapshot = layers;
   let lastCompiledVersion;
   let changeHistory = [];
+  let unsavedChanges = {};
   let lastAppend;
   let colOrder;
   // The archive for removed columns
@@ -141,8 +142,6 @@ const Dataset = ({ datasetId, userId }) => {
     //   Buffer.byteLength(csv, 'uft8'),
     // )(lastCompiledVersion);
     addLayer: (layerKey, layer) => {
-      console.log(layerKey, layer);
-      // todo interaction with snapshots?
       baseState = R.assoc('layers', addLayer(layerKey, layer, layers))(baseState);
       layers = addLayer(layerKey, layer, layers);
       layerSnapshot = layers;
@@ -157,6 +156,12 @@ const Dataset = ({ datasetId, userId }) => {
     },
     clearLayers: () => {
       layers = initial_layers;
+    },
+    addToUnsavedChanges: change => {
+      unsavedChanges = {
+        ...unsavedChanges,
+        ...change,
+      };
     },
     toggleLayer: async (toggleKey, isVisible) => {
       baseState = {
@@ -192,20 +197,20 @@ const Dataset = ({ datasetId, userId }) => {
       };
     },
     load: async () => {
-      console.log(
-        'attempting to load...',
-        s3Params,
-        baseState ? R.omit(['rows'], baseState) : undefined,
-      );
+      // console.log(
+      //   'attempting to load...',
+      //   s3Params,
+      //   baseState ? R.omit(['rows'], baseState) : undefined,
+      // );
       try {
         baseState = await loadCompiledDataset(
           datasetId,
           baseState ? R.omit(['rows'], baseState) : undefined,
         );
         layers = baseState.layers;
+        unsavedChanges = baseState.unsavedChanges;
         if (!baseState.colOrder && !colOrder) {
           colOrder = R.pluck('_id', baseState.underlyingColumns);
-          console.log('colOrder', colOrder);
         }
       } catch (e) {
         console.log('error loading dataset from s3', s3Params, e);
@@ -235,11 +240,15 @@ const Dataset = ({ datasetId, userId }) => {
       If we can avoid these by tracking changes, that will pay dividends.
       */
 
-      return sortDatasetByColumnOrder(colOrder, {
+      const returnValue = {
         ...baseState,
         layers,
         rows: baseState?.rows?.slice(start, end + 1) ?? [],
-      });
+      };
+      if (colOrder?.length > 0) {
+        return sortDatasetByColumnOrder(colOrder, returnValue);
+      }
+      return returnValue;
     },
     // todo make function called getDatasetSummary that returns IDatasetSummary interface from Postgres
     addDiff: async diff => {
@@ -327,18 +336,30 @@ const Dataset = ({ datasetId, userId }) => {
 
       return baseState;
     },
+    saveRows: async () => {
+      const redshift = makeRedshift();
+      const query = makeSaveRowsQuery(
+        datasetId,
+        unsavedChanges,
+        baseState.baseColumns,
+      );
+      console.log(query);
+
+      return query;
+    },
     saveHead: async () => {
       if (!baseState?.columns) return;
       const headToPersist = R.pipe(
         R.assoc('colOrder', colOrder),
+        R.assoc('unsavedChanges', unsavedChanges),
         R.omit(['rows', 'underlyingColumns', 'baseColumns']),
         R.assoc('columns', baseState.baseColumns),
       )(baseState);
 
-      console.log(
-        'saving something like this',
-        JSON.stringify(headToPersist, undefined, 2),
-      );
+      // console.log(
+      //   'saving something like this',
+      //   JSON.stringify(headToPersist, undefined, 2),
+      // );
       await saveColumnsToS3(datasetId, headToPersist);
     },
     saveAsNew: async newDatasetId => {

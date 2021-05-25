@@ -205,9 +205,14 @@ io.on('connection', async socket => {
     socket.emit('downloadReady', s3Urls);
   });
 
-  socket.on('saveDataset', async () => {
-    // todo I don't think this is ever called
-    await cnxn.saveHead();
+  socket.on('addUnsavedChange', change => {
+    cnxn.addToUnsavedChanges(change);
+    saveAfterDelay();
+  });
+
+  socket.on('saveRows', async () => {
+    await cnxn.saveRows();
+    refreshInView(cnxn);
   });
 
   socket.on('saveAsNew', async ({ newDatasetId }) => {

@@ -115,6 +115,7 @@ const loadCompiledDataset = async (
   }
 
   const baseState = {
+    ...rest,
     layers,
     layerToggles,
     deletedObjects,
