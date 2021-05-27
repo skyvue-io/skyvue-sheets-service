@@ -26,11 +26,11 @@ const makeQueryFromLayers = (
       'sortings',
       makeSortingQuery(applyGrouping, layers.sortings, layers.groupings),
     ),
+    knex => knex.limit(MAX_IN_MEMORY_ROWS).toString(),
     x => {
-      console.log('current query', format(x.toString()));
+      console.log('current query\n---\n', format(x.toString()), '\n---');
       return x;
     },
-    knex => knex.limit(MAX_IN_MEMORY_ROWS).toString(),
   )(knex(makeTableName(datasetId)));
 
 module.exports = makeQueryFromLayers;

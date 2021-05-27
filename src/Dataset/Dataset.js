@@ -327,7 +327,15 @@ const Dataset = ({ datasetId, userId }) => {
     saveRows: async () => {
       const redshift = makeRedshift();
       const query = makeSaveRowsQuery(datasetId, baseState);
-      console.log(query);
+
+      // todo await redshift.query(query);
+      // todo
+      /*
+      baseState = {
+        ...baseState,
+        unsavedChanges: {},
+      }
+      */
 
       return query;
     },

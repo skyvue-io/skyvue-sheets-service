@@ -25,14 +25,8 @@ const loadCompiledDataset = async (
   { onlyHead = false } = {},
 ) => {
   const redshift = await makeRedshift();
-  const {
-    columns,
-    underlyingColumns,
-    baseColumns,
-    layerToggles,
-    deletedObjects,
-    ...rest
-  } = columnsAndLayers ?? (await loadColumns(datasetId));
+  const { columns, underlyingColumns, baseColumns, layerToggles, ...rest } =
+    columnsAndLayers ?? (await loadColumns(datasetId));
 
   const layers = rest.layers ?? initial_layers;
 
@@ -74,7 +68,6 @@ const loadCompiledDataset = async (
     ...rest,
     layers,
     layerToggles,
-    deletedObjects,
     columns: newColumns,
     underlyingColumns: newColumns,
     baseColumns: baseColumns ?? columns,
