@@ -83,7 +83,6 @@ io.on('connection', async socket => {
 
   const refreshInView = async cnxn => {
     try {
-      console.log('refreshing in view');
       await cnxn.load();
       const slice = await cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
       socket.emit('setBoardData', slice);

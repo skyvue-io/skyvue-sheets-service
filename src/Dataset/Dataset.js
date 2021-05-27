@@ -71,15 +71,11 @@ const Dataset = ({ datasetId, userId }) => {
   let lastSlice;
   let layers = initial_layers;
   let layerSnapshot = layers;
-  let lastCompiledVersion;
   let changeHistory = [];
-  let unsavedChanges = {};
   let lastAppend;
   let colOrder;
   // The archive for removed columns
   const removedColumns = {};
-  // The cache for compiled boardData objects for each boardId that is joined
-  const joinedDatasetCache = {};
 
   return {
     get baseState() {
@@ -137,10 +133,6 @@ const Dataset = ({ datasetId, userId }) => {
     },
     estCSVSize: async () => 205,
     // todo can we estimate csv size in a redshift query?
-    // if (!baseState || !lastCompiledVersion) return;
-    // return R.pipe(boardDataToCSVReadableJSON, jsonToCSV, csv =>
-    //   Buffer.byteLength(csv, 'uft8'),
-    // )(lastCompiledVersion);
     addLayer: (layerKey, layer) => {
       baseState = R.assoc('layers', addLayer(layerKey, layer, layers))(baseState);
       layers = addLayer(layerKey, layer, layers);
@@ -158,9 +150,12 @@ const Dataset = ({ datasetId, userId }) => {
       layers = initial_layers;
     },
     addToUnsavedChanges: change => {
-      unsavedChanges = {
-        ...unsavedChanges,
-        ...change,
+      baseState = {
+        ...baseState,
+        unsavedChanges: {
+          ...(baseState?.unsavedChanges ?? {}),
+          ...change,
+        },
       };
     },
     toggleLayer: async (toggleKey, isVisible) => {
@@ -197,18 +192,12 @@ const Dataset = ({ datasetId, userId }) => {
       };
     },
     load: async () => {
-      // console.log(
-      //   'attempting to load...',
-      //   s3Params,
-      //   baseState ? R.omit(['rows'], baseState) : undefined,
-      // );
       try {
         baseState = await loadCompiledDataset(
           datasetId,
           baseState ? R.omit(['rows'], baseState) : undefined,
         );
         layers = baseState.layers;
-        unsavedChanges = baseState.unsavedChanges;
         if (!baseState.colOrder && !colOrder) {
           colOrder = R.pluck('_id', baseState.underlyingColumns);
         }
@@ -218,7 +207,6 @@ const Dataset = ({ datasetId, userId }) => {
 
       return baseState;
     },
-    // todo write unload function to unload back to s3 and clean up tables on disconnect
     getSlice: async (start, end, { useCached = false } = {}) => {
       if (end > MAX_IN_MEMORY_ROWS) {
         console.log(
@@ -338,11 +326,7 @@ const Dataset = ({ datasetId, userId }) => {
     },
     saveRows: async () => {
       const redshift = makeRedshift();
-      const query = makeSaveRowsQuery(
-        datasetId,
-        unsavedChanges,
-        baseState.baseColumns,
-      );
+      const query = makeSaveRowsQuery(datasetId, baseState);
       console.log(query);
 
       return query;
@@ -351,7 +335,6 @@ const Dataset = ({ datasetId, userId }) => {
       if (!baseState?.columns) return;
       const headToPersist = R.pipe(
         R.assoc('colOrder', colOrder),
-        R.assoc('unsavedChanges', unsavedChanges),
         R.omit(['rows', 'underlyingColumns', 'baseColumns']),
         R.assoc('columns', baseState.baseColumns),
       )(baseState);

@@ -1,7 +1,7 @@
 const knex = require('../../utils/knex');
 const makeTableName = require('../makeTableName');
 
-const makeSaveRowsQuery = (datasetId, unsavedChanges, columns) => {
+const makeSaveRowsQuery = (datasetId, baseState) => {
   const table = makeTableName(datasetId);
   const selectQuery = knex(table).select().toString();
 
