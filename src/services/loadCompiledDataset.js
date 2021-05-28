@@ -22,7 +22,7 @@ const initial_layers = {
 const loadCompiledDataset = async (
   datasetId,
   columnsAndLayers,
-  { onlyHead = false } = {},
+  { onlyHead = false, makeSummary = false } = {},
 ) => {
   const redshift = await makeRedshift();
   const { columns, underlyingColumns, baseColumns, layerToggles, ...rest } =
@@ -55,6 +55,21 @@ const loadCompiledDataset = async (
       applyJoinToColumns(joinedDatasetColumns?.columns ?? {}, layers.joins),
     ),
   )(baseColumns ?? columns);
+
+  if (makeSummary) {
+    return makeQueryFromLayers(
+      layerVisibilityTable.groupings,
+      applyIfVisible,
+      datasetId,
+      {
+        columns: newColumns,
+        layers,
+      },
+      {
+        makeSummary: true,
+      },
+    );
+  }
 
   if (onlyHead) {
     return {

@@ -8,7 +8,7 @@ const makeBoardDataFromVersion = require('../lib/makeBoardDataFromVersion');
 const importToBaseState = require('../lib/importToBaseState');
 const sortDatasetByColumnOrder = require('../lib/sortDatasetByColumnOrder');
 const makeSaveRowsQuery = require('../lib/queries/makeSaveRowsQuery');
-const makeTableName = require('../lib/makeTableName');
+const makeQueryFromLayers = require('../lib/makeQueryFromLayers');
 
 const skyvueFetch = require('../services/skyvueFetch');
 const makeRedshift = require('../services/redshift');
@@ -237,7 +237,33 @@ const Dataset = ({ datasetId, userId }) => {
       }
       return returnValue;
     },
-    // todo make function called getDatasetSummary that returns IDatasetSummary interface from Postgres
+    getColumnSummary: async () => {
+      /*
+      should return this:
+      [key: string]: {
+        columnId: string;
+        uniqueValues: number;
+        sum: number;
+        mean: number;
+        min: number;
+        max: number;
+      };
+
+      select 
+        sum(col) as sum-colId,
+        mean(col) as mean-colId
+
+
+      from table
+      */
+      const query = await loadCompiledDataset(
+        datasetId,
+        baseState ? R.omit(['rows'], baseState) : undefined,
+        { makeSummary: true },
+      );
+      console.log('compiled dataset query', query);
+      return query;
+    },
     addDiff: async diff => {
       /*
         TODO this will be a big one.

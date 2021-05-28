@@ -87,6 +87,7 @@ io.on('connection', async socket => {
       const slice = await cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END);
       socket.emit('setBoardData', slice);
       socket.emit('csvEstimate', await cnxn.estCSVSize());
+      socket.emit('columnSummary', await cnxn.getColumnSummary());
       socket.emit('meta', cnxn.meta);
     } catch (e) {
       socket.emit('boardError', {
@@ -102,8 +103,10 @@ io.on('connection', async socket => {
     const slice = await cnxn.getSlice(DEFAULT_SLICE_START, DEFAULT_SLICE_END, {
       useCached: true,
     });
+    // todo leverage refreshInView for this bit
     socket.emit('initialDatasetReceived', slice);
     socket.emit('csvEstimate', 200); // todo fixme
+    socket.emit('columnSummary', await cnxn.getColumnSummary());
     socket.emit('meta', cnxn.meta);
   });
 

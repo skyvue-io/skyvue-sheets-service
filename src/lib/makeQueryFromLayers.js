@@ -6,6 +6,7 @@ const makeTableName = require('./makeTableName');
 const makeJoinQuery = require('./queries/layers/makeJoinQuery');
 const makeGroupingQuery = require('./queries/layers/makeGroupingQuery');
 const makeSortingQuery = require('./queries/layers/makeSortingQuery');
+const makeColumnSummaryQuery = require('./queries/makeColumnSummaryQuery');
 
 const { MAX_IN_MEMORY_ROWS } = require('../constants/boardDataMetaConstants');
 
@@ -14,6 +15,7 @@ const makeQueryFromLayers = (
   applyIfVisible,
   datasetId,
   { columns, layers },
+  { makeSummary = false } = {},
 ) =>
   R.pipe(
     applyIfVisible('joins', makeJoinQuery(datasetId, layers.joins)),
@@ -26,6 +28,7 @@ const makeQueryFromLayers = (
       'sortings',
       makeSortingQuery(applyGrouping, layers.sortings, layers.groupings),
     ),
+    knex => (makeSummary ? makeColumnSummaryQuery(columns, knex) : knex),
     knex => knex.limit(MAX_IN_MEMORY_ROWS).toString(),
     x => {
       console.log('current query\n---\n', format(x.toString()), '\n---');
