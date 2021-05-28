@@ -1,7 +1,6 @@
 const aws = require('aws-sdk');
 const R = require('ramda');
 
-const applyDatasetLayers = require('../lib/applyDatasetLayers');
 const boardDataToCSVReadableJSON = require('../lib/boardDataToCSVReadableJSON');
 const jsonToCSV = require('../lib/jsonToCSV');
 const { formatValueFromBoardData } = require('../lib/formatValue');
@@ -9,6 +8,7 @@ const makeBoardDataFromVersion = require('../lib/makeBoardDataFromVersion');
 const importToBaseState = require('../lib/importToBaseState');
 const sortDatasetByColumnOrder = require('../lib/sortDatasetByColumnOrder');
 const makeSaveRowsQuery = require('../lib/queries/makeSaveRowsQuery');
+const makeTableName = require('../lib/makeTableName');
 
 const skyvueFetch = require('../services/skyvueFetch');
 const makeRedshift = require('../services/redshift');
@@ -17,7 +17,6 @@ const saveColumnsToS3 = require('../services/saveColumnsToS3');
 
 const addDiff = require('../utils/addDiff');
 const addLayer = require('../utils/addLayer');
-const parseJson = require('../utils/parseJson');
 const stringifyJson = require('../utils/stringifyJson');
 
 const { MAX_IN_MEMORY_ROWS } = require('../constants/boardDataMetaConstants');
@@ -325,19 +324,33 @@ const Dataset = ({ datasetId, userId }) => {
       return baseState;
     },
     saveRows: async () => {
-      const redshift = makeRedshift();
-      const query = makeSaveRowsQuery(datasetId, baseState);
+      if (
+        Object.values(baseState?.unsavedChanges ?? {}).filter(
+          change => change.targetType === 'cell',
+        ).length === 0
+      )
+        return;
 
-      // todo await redshift.query(query);
-      // todo
-      /*
+      const redshift = await makeRedshift();
+
+      await redshift.query(
+        `
+          alter table spectrum."${datasetId}_working"
+          SET TABLE PROPERTIES (
+            'skip.header.line.count'= '0'
+          )
+        `.toString(),
+      );
+      await redshift.query(makeSaveRowsQuery(datasetId, baseState));
+
       baseState = {
         ...baseState,
-        unsavedChanges: {},
-      }
-      */
+        unsavedChanges: R.filter(change => change.targetType !== 'cell')(
+          baseState?.unsavedChanges ?? {},
+        ),
+      };
 
-      return query;
+      return true;
     },
     saveHead: async () => {
       if (!baseState?.columns) return;

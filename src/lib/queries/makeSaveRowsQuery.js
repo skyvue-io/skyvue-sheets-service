@@ -7,28 +7,15 @@ const makeTableName = require('../makeTableName');
 const makeSaveRowsQuery = (datasetId, baseState) => {
   const { unsavedChanges, underlyingColumns } = baseState;
 
-  const columnIdsWithUnsavedChanges = R.pipe(
-    R.filter(R.propEq('targetType', 'cell')),
-    R.pluck('columnId'),
-    R.values,
-  )(unsavedChanges);
-
   const table = makeTableName(datasetId);
-  const selectQuery = knex.select().table(table);
+  const selectQuery = knex.select('id').table(table);
 
-  underlyingColumns
-    .filter(col => !columnIdsWithUnsavedChanges.includes(col._id))
-    .forEach(col => {
-      selectQuery.select(col._id);
-    });
+  underlyingColumns.forEach(col => {
+    const unsavedChange = Object.values(unsavedChanges).find(
+      change => change.columnId === col._id,
+    );
 
-  underlyingColumns
-    .filter(col => columnIdsWithUnsavedChanges.includes(col._id))
-    .forEach(col => {
-      const unsavedChange = Object.values(unsavedChanges).find(
-        change => change.columnId === col._id,
-      );
-
+    if (unsavedChange) {
       selectQuery.select(
         knex.raw(
           `case id 
@@ -38,8 +25,12 @@ const makeSaveRowsQuery = (datasetId, baseState) => {
             end as "${col._id}"`,
         ),
       );
-    });
+    } else {
+      selectQuery.select(col._id);
+    }
+  });
 
+  console.log(format(selectQuery.toString()));
   const query = `
     UNLOAD ('${selectQuery.toString()}')
     TO 's3://skyvue-datasets/${datasetId}/rows/'
