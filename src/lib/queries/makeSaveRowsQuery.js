@@ -11,20 +11,20 @@ const makeSaveRowsQuery = (datasetId, baseState) => {
   const selectQuery = knex.select('id').table(table);
 
   underlyingColumns.forEach(col => {
-    const unsavedChange = Object.values(unsavedChanges).find(
+    const unsavedChangesForColumn = Object.values(unsavedChanges).filter(
       change => change.columnId === col._id,
     );
 
-    if (unsavedChange) {
-      selectQuery.select(
-        knex.raw(
-          `case id 
-            when ''${unsavedChange.rowId}''
-            then ''${unsavedChange.value}''
-            else "spectrum"."${datasetId}_working"."${col._id}" 
-            end as "${col._id}"`,
-        ),
-      );
+    if (unsavedChangesForColumn.length > 0) {
+      let baseQuery = `case id`;
+      unsavedChangesForColumn.forEach(change => {
+        baseQuery += `
+          when ''${change.rowId}''
+          then ''${change.value}''
+        `;
+      });
+      baseQuery += `else "spectrum"."${datasetId}_working"."${col._id}" end as "${col._id}"`;
+      selectQuery.select(knex.raw(baseQuery));
     } else {
       selectQuery.select(col._id);
     }
