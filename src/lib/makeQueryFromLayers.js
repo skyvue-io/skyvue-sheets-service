@@ -4,6 +4,7 @@ const knex = require('../utils/knex');
 const makeTableName = require('./makeTableName');
 
 const makeJoinQuery = require('./queries/layers/makeJoinQuery');
+const makeFilterQuery = require('./queries/layers/makeFilterQuery');
 const makeGroupingQuery = require('./queries/layers/makeGroupingQuery');
 const makeSortingQuery = require('./queries/layers/makeSortingQuery');
 const makeColumnSummaryQuery = require('./queries/makeColumnSummaryQuery');
@@ -19,6 +20,7 @@ const makeQueryFromLayers = (
 ) =>
   R.pipe(
     applyIfVisible('joins', makeJoinQuery(datasetId, layers.joins)),
+    applyIfVisible('filters', makeFilterQuery(layers.filters)),
     currentKnex => knex.with('query', currentKnex).select().from('query'),
     applyIfVisible(
       'groupings',
