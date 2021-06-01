@@ -57,17 +57,19 @@ const loadCompiledDataset = async (
   )(baseColumns ?? columns);
 
   if (makeSummary) {
-    return makeQueryFromLayers(
-      layerVisibilityTable.groupings,
-      applyIfVisible,
-      datasetId,
-      {
-        columns: newColumns,
-        layers,
-      },
-      {
-        makeSummary: true,
-      },
+    return redshift.query(
+      makeQueryFromLayers(
+        layerVisibilityTable.groupings,
+        applyIfVisible,
+        datasetId,
+        {
+          columns: newColumns,
+          layers,
+        },
+        {
+          makeSummary: true,
+        },
+      ),
     );
   }
 

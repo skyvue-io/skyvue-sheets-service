@@ -8,7 +8,7 @@ const makeBoardDataFromVersion = require('../lib/makeBoardDataFromVersion');
 const importToBaseState = require('../lib/importToBaseState');
 const sortDatasetByColumnOrder = require('../lib/sortDatasetByColumnOrder');
 const makeSaveRowsQuery = require('../lib/queries/makeSaveRowsQuery');
-const makeQueryFromLayers = require('../lib/makeQueryFromLayers');
+const transformColumnSummaryResponse = require('../lib/transformColumnSummaryResponse');
 
 const skyvueFetch = require('../services/skyvueFetch');
 const makeRedshift = require('../services/redshift');
@@ -238,31 +238,17 @@ const Dataset = ({ datasetId, userId }) => {
       return returnValue;
     },
     getColumnSummary: async () => {
-      /*
-      should return this:
-      [key: string]: {
-        columnId: string;
-        uniqueValues: number;
-        sum: number;
-        mean: number;
-        min: number;
-        max: number;
-      };
+      const columnSummary = R.pipe(
+        () =>
+          loadCompiledDataset(
+            datasetId,
+            baseState ? R.omit(['rows'], baseState) : undefined,
+            { makeSummary: true },
+          ),
+        R.andThen(transformColumnSummaryResponse),
+      )();
 
-      select 
-        sum(col) as sum-colId,
-        mean(col) as mean-colId
-
-
-      from table
-      */
-      const query = await loadCompiledDataset(
-        datasetId,
-        baseState ? R.omit(['rows'], baseState) : undefined,
-        { makeSummary: true },
-      );
-      console.log('compiled dataset query', query);
-      return query;
+      return columnSummary;
     },
     addDiff: async diff => {
       /*
