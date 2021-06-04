@@ -30,7 +30,6 @@ const makeSaveRowsQuery = (datasetId, baseState) => {
     }
   });
 
-  console.log(format(selectQuery.toString()));
   const query = `
     UNLOAD ('${selectQuery.toString()}')
     TO 's3://skyvue-datasets/${datasetId}/rows/'
@@ -38,8 +37,6 @@ const makeSaveRowsQuery = (datasetId, baseState) => {
     ALLOWOVERWRITE
     format as CSV
   `;
-
-  console.log(query);
 
   return query;
 };

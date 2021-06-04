@@ -11,7 +11,11 @@ const R = require('ramda');
 const Sentry = require('@sentry/node');
 const Tracing = require('@sentry/tracing');
 
+const { makeImportTableQuery } = require('./lib/queries/makeImportQuery');
+
+const selectContentFromS3 = require('./services/selectContentFromS3');
 const loadCompiledDataset = require('./services/loadCompiledDataset');
+const makeRedshift = require('./services/redshift');
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
@@ -178,15 +182,38 @@ io.on('connection', async socket => {
     saveAfterDelay();
   });
 
-  socket.on('datadump', async file => {
-    // todo We should likely offload this to postgres
-    const csvAsJson = await csv().fromString(file.toString());
-    cnxn.setLastAppend(csvAsJson);
+  socket.on('appendUploadComplete', async datasetId => {
+    const s3Params = {
+      Key: `${datasetId}/0`,
+      Bucket: 'skyvue-datasets-appends',
+    };
+    const content = await selectContentFromS3(s3Params);
+    const json = await csv().fromString(content);
+    const length = parseInt(
+      await selectContentFromS3(s3Params, 'SELECT count(*) from S3Object'),
+      10,
+    );
+
+    cnxn.setLastAppend({
+      meta: {
+        length,
+      },
+    });
+
+    console.log(json);
+
+    try {
+      const redshift = await makeRedshift();
+      await redshift.query(makeImportTableQuery(datasetId, json));
+    } catch (e) {
+      console.error('error creating import table in redshift spectrum', datasetId);
+    }
+
     socket.emit('appendPreview', {
       meta: {
-        length: csvAsJson.length,
+        length,
       },
-      records: [cnxn.lastAppend?.[0], R.last(cnxn.lastAppend)],
+      records: json.slice(0, 10),
     });
   });
 

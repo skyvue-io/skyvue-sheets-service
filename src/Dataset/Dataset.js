@@ -8,6 +8,7 @@ const makeBoardDataFromVersion = require('../lib/makeBoardDataFromVersion');
 const importToBaseState = require('../lib/importToBaseState');
 const sortDatasetByColumnOrder = require('../lib/sortDatasetByColumnOrder');
 const makeSaveRowsQuery = require('../lib/queries/makeSaveRowsQuery');
+const { makeImportQuery } = require('../lib/queries/makeImportQuery');
 const transformColumnSummaryResponse = require('../lib/transformColumnSummaryResponse');
 
 const skyvueFetch = require('../services/skyvueFetch');
@@ -98,158 +99,6 @@ const Dataset = ({ datasetId, userId }) => {
     get lastSlice() {
       return lastSlice;
     },
-    setLastAppend: data => {
-      // todo offload this to redshift
-      lastAppend = data;
-    },
-    /**
-     * @param {{ columnMapping, dedupeSettings }} importSettings
-     */
-    importLastAppended: async ({ columnMapping, dedupeSettings }) => {
-      if (!lastAppend) return;
-      // todo will need to audit this
-      // save initial baseState size
-      // apply to base state
-      // save difference
-      // save import log to api server
-      const initialBaseStateLength = baseState?.rows?.length ?? 0;
-      baseState = importToBaseState({
-        columnMapping,
-        dedupeSettings,
-        importData: lastAppend,
-        baseState,
-      });
-      try {
-        await skyvueFetch.post('/datasets/append/log', {
-          userId,
-          datasetId,
-          beginningRowCount: initialBaseStateLength,
-          endingRowCount: baseState?.rows?.length ?? 0,
-        });
-      } catch (e) {
-        console.error(e);
-      }
-    },
-    estCSVSize: async () => 205,
-    // todo can we estimate csv size in a redshift query?
-    addLayer: (layerKey, layer) => {
-      baseState = R.assoc('layers', addLayer(layerKey, layer, layers))(baseState);
-      layers = addLayer(layerKey, layer, layers);
-      layerSnapshot = layers;
-    },
-    syncLayers: newLayers => {
-      if (R.equals(layers, newLayers)) return;
-      layers = newLayers;
-    },
-    saveToHistory: change => {
-      // todo rewrite change history overall. It's pretty garbage right now.
-      changeHistory = [...changeHistory, change];
-    },
-    clearLayers: () => {
-      layers = initial_layers;
-    },
-    addToUnsavedChanges: change => {
-      baseState = {
-        ...baseState,
-        unsavedChanges: {
-          ...(baseState?.unsavedChanges ?? {}),
-          ...change,
-        },
-      };
-    },
-    toggleLayer: async (toggleKey, isVisible) => {
-      baseState = {
-        ...baseState,
-        layerToggles: {
-          ...baseState?.layerToggles,
-          [toggleKey]: isVisible,
-        },
-      };
-
-      return baseState;
-    },
-    runQueuedFunc: () => {
-      fnQueue?.();
-    },
-    queueFunc: fn => {
-      fnQueue = fn;
-    },
-    clearFuncQueue: () => {
-      fnQueue = undefined;
-    },
-    setLastSlice: (start, end) => {
-      // todo I don't think we need this anymore?
-      lastSlice = [start, end];
-    },
-    setColOrder: newColOrder => {
-      colOrder = newColOrder;
-    },
-    setDeletedObjects: newDeletedObjects => {
-      baseState = {
-        ...baseState,
-        deletedObjects: newDeletedObjects,
-      };
-    },
-    load: async () => {
-      try {
-        baseState = await loadCompiledDataset(
-          datasetId,
-          baseState ? R.omit(['rows'], baseState) : undefined,
-        );
-        layers = baseState.layers;
-        if (!baseState.colOrder && !colOrder) {
-          colOrder = R.pluck('_id', baseState.underlyingColumns);
-        }
-      } catch (e) {
-        console.log('error loading dataset from s3', s3Params, e);
-      }
-
-      return baseState;
-    },
-    getSlice: async (start, end, { useCached = false } = {}) => {
-      if (end > MAX_IN_MEMORY_ROWS) {
-        console.log(
-          'This is where I will need to query by offset/row number in Redshift',
-        );
-        return;
-      }
-
-      /* todo FUTURE APPROACH PSEUDO CODE
-      
-      get a list of layers that have changed since the last compilation. loadCompiledDataset will account for this.
-      arrayOfLayersToRedo = diff(layers, layerSnapshot);
-      
-      Cache check should:
-        - Check if rows selected are contained in the in-memory data. If so, return that slice.
-        - If not, loadCompiledDataset({ future params that will allow us to set row indeces, using sql offset });
-      
-      In general, we want to avoid the insert & onConflict & merge calls that we are currently making every time. 
-      If we can avoid these by tracking changes, that will pay dividends.
-      */
-
-      const returnValue = {
-        ...baseState,
-        layers,
-        rows: baseState?.rows?.slice(start, end + 1) ?? [],
-      };
-      if (colOrder?.length > 0) {
-        return sortDatasetByColumnOrder(colOrder, returnValue);
-      }
-      return returnValue;
-    },
-    getColumnSummary: async () => {
-      const columnSummary = R.pipe(
-        () =>
-          loadCompiledDataset(
-            datasetId,
-            baseState ? R.omit(['rows'], baseState) : undefined,
-            { makeSummary: true },
-          ),
-        R.andThen(transformColumnSummaryResponse),
-      )();
-
-      return columnSummary;
-    },
     addDiff: async diff => {
       /*
         TODO this will be a big one.
@@ -274,6 +123,43 @@ const Dataset = ({ datasetId, userId }) => {
       //   removedColumns[removedColumn._id] = cellsInColumn;
       // }
     },
+    // todo can we estimate csv size in a redshift query?
+    addLayer: (layerKey, layer) => {
+      baseState = R.assoc('layers', addLayer(layerKey, layer, layers))(baseState);
+      layers = addLayer(layerKey, layer, layers);
+      layerSnapshot = layers;
+    },
+    addToUnsavedChanges: change => {
+      baseState = {
+        ...baseState,
+        unsavedChanges: {
+          ...(baseState?.unsavedChanges ?? {}),
+          ...change,
+        },
+      };
+    },
+    checkoutToVersion: (versionId, direction) => {
+      // todo fix change history bc it sucks
+      const changeHistoryItem =
+        changeHistory.find(history => history.revisionId === versionId) ?? {};
+
+      baseState = makeBoardDataFromVersion(
+        changeHistoryItem,
+        direction,
+        baseState,
+        removedColumns,
+      );
+
+      return baseState;
+    },
+    clearFuncQueue: () => {
+      fnQueue = undefined;
+    },
+    clearLayers: () => {
+      layers = initial_layers;
+    },
+    estCSVSize: async () => 205,
+
     exportToCSV: async (title, quantity) => {
       // todo figure literally all of this out
       if (!baseState) return;
@@ -321,19 +207,122 @@ const Dataset = ({ datasetId, userId }) => {
 
       return objectUrls;
     },
-    checkoutToVersion: (versionId, direction) => {
-      // todo fix change history bc it sucks
-      const changeHistoryItem =
-        changeHistory.find(history => history.revisionId === versionId) ?? {};
+    getColumnSummary: async () =>
+      R.pipe(
+        () =>
+          loadCompiledDataset(
+            datasetId,
+            baseState ? R.omit(['rows'], baseState) : undefined,
+            { makeSummary: true },
+          ),
+        R.andThen(transformColumnSummaryResponse),
+      )(),
+    getSlice: async (start, end, { useCached = false } = {}) => {
+      if (end > MAX_IN_MEMORY_ROWS) {
+        console.log(
+          'This is where I will need to query by offset/row number in Redshift',
+        );
+        return;
+      }
 
-      baseState = makeBoardDataFromVersion(
-        changeHistoryItem,
-        direction,
-        baseState,
-        removedColumns,
-      );
+      /* todo FUTURE APPROACH PSEUDO CODE
+      
+      get a list of layers that have changed since the last compilation. loadCompiledDataset will account for this.
+      arrayOfLayersToRedo = diff(layers, layerSnapshot);
+      
+      Cache check should:
+        - Check if rows selected are contained in the in-memory data. If so, return that slice.
+        - If not, loadCompiledDataset({ future params that will allow us to set row indeces, using sql offset });
+      
+      In general, we want to avoid the insert & onConflict & merge calls that we are currently making every time. 
+      If we can avoid these by tracking changes, that will pay dividends.
+      */
+
+      const returnValue = {
+        ...baseState,
+        layers,
+        rows: baseState?.rows?.slice(start, end + 1) ?? [],
+      };
+      if (colOrder?.length > 0) {
+        return sortDatasetByColumnOrder(colOrder, returnValue);
+      }
+      return returnValue;
+    },
+    /**
+     * @param {{ columnMapping, dedupeSettings }} importSettings
+     */
+    importLastAppended: async importSettings => {
+      if (!lastAppend) return;
+
+      const redshift = await makeRedshift();
+      try {
+        console.log(
+          'import query',
+          makeImportQuery(importSettings, baseState.baseColumns, datasetId),
+        );
+        await skyvueFetch.post('/datasets/append/log', {
+          userId,
+          datasetId,
+          beginningRowCount: 100, // should use head.length,
+          endingRowCount: 100 + lastAppend?.meta?.length ?? 0,
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    load: async () => {
+      try {
+        baseState = await loadCompiledDataset(
+          datasetId,
+          baseState ? R.omit(['rows'], baseState) : undefined,
+        );
+        layers = baseState.layers;
+        if (!baseState.colOrder && !colOrder) {
+          colOrder = R.pluck('_id', baseState.underlyingColumns);
+        }
+      } catch (e) {
+        console.log('error loading dataset from s3', s3Params, e);
+      }
 
       return baseState;
+    },
+    queueFunc: fn => {
+      fnQueue = fn;
+    },
+    runQueuedFunc: () => {
+      fnQueue?.();
+    },
+    saveAsNew: async newDatasetId => {
+      // todo this will absolutely need to change
+      const compiled = await getCompiled(layers, baseState);
+
+      await s3
+        .putObject({
+          ...s3Params,
+          ContentType: 'application/json',
+          Key: newDatasetId,
+          Body: await stringifyJson({
+            ...compiled,
+            layers: initial_layers,
+          }),
+        })
+        .promise();
+
+      return true;
+    },
+    saveHead: async () => {
+      if (!baseState?.columns) return;
+      const headToPersist = R.pipe(
+        R.assoc('colOrder', colOrder),
+        R.omit(['rows', 'underlyingColumns', 'baseColumns']),
+        R.assoc('columns', baseState.baseColumns),
+      )(baseState);
+
+      // console.log(
+      //   'saving something like this',
+      //   JSON.stringify(headToPersist, undefined, 2),
+      // );
+      await saveColumnsToS3(datasetId, headToPersist);
     },
     saveRows: async () => {
       if (
@@ -364,37 +353,41 @@ const Dataset = ({ datasetId, userId }) => {
 
       return true;
     },
-    saveHead: async () => {
-      if (!baseState?.columns) return;
-      const headToPersist = R.pipe(
-        R.assoc('colOrder', colOrder),
-        R.omit(['rows', 'underlyingColumns', 'baseColumns']),
-        R.assoc('columns', baseState.baseColumns),
-      )(baseState);
-
-      // console.log(
-      //   'saving something like this',
-      //   JSON.stringify(headToPersist, undefined, 2),
-      // );
-      await saveColumnsToS3(datasetId, headToPersist);
+    saveToHistory: change => {
+      // todo rewrite change history overall. It's pretty garbage right now.
+      changeHistory = [...changeHistory, change];
     },
-    saveAsNew: async newDatasetId => {
-      // todo this will absolutely need to change
-      const compiled = await getCompiled(layers, baseState);
+    setColOrder: newColOrder => {
+      colOrder = newColOrder;
+    },
+    setDeletedObjects: newDeletedObjects => {
+      baseState = {
+        ...baseState,
+        deletedObjects: newDeletedObjects,
+      };
+    },
+    setLastAppend: data => {
+      console.log('last append set', data);
+      lastAppend = data;
+    },
+    setLastSlice: (start, end) => {
+      // todo I don't think we need this anymore?
+      lastSlice = [start, end];
+    },
+    syncLayers: newLayers => {
+      if (R.equals(layers, newLayers)) return;
+      layers = newLayers;
+    },
+    toggleLayer: async (toggleKey, isVisible) => {
+      baseState = {
+        ...baseState,
+        layerToggles: {
+          ...baseState?.layerToggles,
+          [toggleKey]: isVisible,
+        },
+      };
 
-      await s3
-        .putObject({
-          ...s3Params,
-          ContentType: 'application/json',
-          Key: newDatasetId,
-          Body: await stringifyJson({
-            ...compiled,
-            layers: initial_layers,
-          }),
-        })
-        .promise();
-
-      return true;
+      return baseState;
     },
   };
 };
