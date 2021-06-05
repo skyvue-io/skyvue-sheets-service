@@ -9,6 +9,7 @@ const importToBaseState = require('../lib/importToBaseState');
 const sortDatasetByColumnOrder = require('../lib/sortDatasetByColumnOrder');
 const makeSaveRowsQuery = require('../lib/queries/makeSaveRowsQuery');
 const { makeImportQuery } = require('../lib/queries/makeImportQuery');
+const makeUnloadQuery = require('../lib/queries/makeUnloadQuery');
 const transformColumnSummaryResponse = require('../lib/transformColumnSummaryResponse');
 
 const skyvueFetch = require('../services/skyvueFetch');
@@ -257,8 +258,16 @@ const Dataset = ({ datasetId, userId }) => {
       const redshift = await makeRedshift();
       try {
         console.log(
-          'import query',
-          makeImportQuery(importSettings, baseState.baseColumns, datasetId),
+          makeUnloadQuery(
+            `s3://skyvue-datasets/${datasetId}/rows/`,
+            makeImportQuery(importSettings, baseState.baseColumns, datasetId),
+          ),
+        );
+        await redshift.query(
+          makeUnloadQuery(
+            `s3://skyvue-datasets/${datasetId}/rows/`,
+            makeImportQuery(importSettings, baseState.baseColumns, datasetId),
+          ),
         );
         await skyvueFetch.post('/datasets/append/log', {
           userId,

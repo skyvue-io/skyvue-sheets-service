@@ -1,9 +1,11 @@
 const R = require('ramda');
+
+const makeTableName = require('../makeTableName');
 const knex = require('../../utils/knex');
 
 const makeImportTableQuery = (boardId, content) =>
   knex.schema
-    .createTableIfNotExists(`spectrum.${boardId}_append`, table => {
+    .createTable(`spectrum.${boardId}_append`, table => {
       Object.keys(content[0]).forEach(col => {
         table.string(col);
       });
@@ -20,21 +22,43 @@ const makeImportTableQuery = (boardId, content) =>
   `.trim();
 
 const makeImportQuery = ({ columnMapping, dedupeSettings }, columns, datasetId) => {
-  console.log('----- import query -----', columnMapping, dedupeSettings, columns);
-  const query = knex.select().table(`${datasetId}_append`);
+  const query = knex.select().table(`spectrum.${datasetId}_append`);
+  query.select(
+    knex.raw(
+      'md5(cast (random() * 100 as int) || cast(random() * 100 as int) || TIMEOFDAY()) as id',
+    ),
+  );
 
   columns.forEach(col => {
     const mapping = columnMapping.find(mapping => col._id === mapping.mapTo);
     if (mapping) {
       query.select(`${mapping.importKey} as ${mapping.mapTo}`);
-    } else query.select(`null as ${col._id}`);
+    } else {
+      query.select(knex.raw(`null as "${col._id}"`));
+    }
   });
 
-  // query.union(se)
+  query.union([
+    knex
+      .select('id', ...columns.map(col => knex.raw(`"${col._id}"::varchar(max)`))) // cast everything as a string until validation is built
+      .from(makeTableName(datasetId)),
+  ]);
 
-  console.log(query.toString());
-
-  return query.toString();
+  return knex
+    .select('id', ...columns.map(col => col._id))
+    .from(
+      knex
+        .with('query', query)
+        .select('*')
+        .rank(
+          'rank',
+          ['id'],
+          dedupeSettings.dedupeOn.length > 0 ? dedupeSettings.dedupeOn : ['id'],
+        )
+        .from('query'),
+    )
+    .where({ rank: 1 })
+    .toString();
 };
 
 module.exports = { makeImportQuery, makeImportTableQuery };
