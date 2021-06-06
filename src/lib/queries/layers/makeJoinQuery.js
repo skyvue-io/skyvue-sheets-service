@@ -28,7 +28,7 @@ const makeJoinQuery = R.curry((datasetId, joinLayer, knex) => {
         ? knex.innerJoin(joinedTable, ...joinOn).clone()
         : knex.clone(),
     knex =>
-      joinType === 'full'
+      joinType === 'outer'
         ? knex.fullOuterJoin(joinedTable, ...joinOn).clone()
         : knex.clone(),
     knex =>
